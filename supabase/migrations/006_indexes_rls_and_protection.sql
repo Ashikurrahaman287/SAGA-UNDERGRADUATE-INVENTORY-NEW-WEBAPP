@@ -1,0 +1,98 @@
+create index memberships_user_active on public.memberships(user_id, is_active);
+create index memberships_org_role on public.memberships(organization_id, role) where is_active;
+create index categories_org_active on public.categories(organization_id, is_active);
+create index products_org_active on public.products(organization_id, is_active);
+create index products_org_category on public.products(organization_id, category_id);
+create index stock_movements_product_created on public.stock_movements(organization_id, product_id, created_at desc);
+create index customers_org_active on public.customers(organization_id, is_active);
+create index sales_org_created on public.sales(organization_id, created_at desc);
+create index sales_org_status on public.sales(organization_id, payment_status, fulfillment_status);
+create index sale_items_sale on public.sale_items(organization_id, sale_id);
+create index payments_sale_created on public.payments(organization_id, sale_id, created_at desc);
+create index delivery_rider_status on public.delivery_assignments(organization_id, rider_user_id, status);
+create index audit_entity_created on public.audit_logs(organization_id, entity_type, entity_id, created_at desc);
+
+alter table public.organizations enable row level security;
+alter table public.profiles enable row level security;
+alter table public.memberships enable row level security;
+alter table public.business_settings enable row level security;
+alter table public.categories enable row level security;
+alter table public.suppliers enable row level security;
+alter table public.products enable row level security;
+alter table public.stock_movements enable row level security;
+alter table public.customers enable row level security;
+alter table public.customer_addresses enable row level security;
+alter table public.sellers enable row level security;
+alter table public.sales enable row level security;
+alter table public.sale_items enable row level security;
+alter table public.sale_idempotency enable row level security;
+alter table public.payments enable row level security;
+alter table public.packaging_records enable row level security;
+alter table public.packaging_events enable row level security;
+alter table public.delivery_assignments enable row level security;
+alter table public.delivery_events enable row level security;
+alter table public.returns enable row level security;
+alter table public.return_items enable row level security;
+alter table public.refunds enable row level security;
+alter table public.expense_categories enable row level security;
+alter table public.operational_costs enable row level security;
+alter table public.audit_logs enable row level security;
+alter table public.communication_consents enable row level security;
+alter table public.communication_logs enable row level security;
+
+create policy organizations_read_member on public.organizations for select to authenticated using (public.is_org_member(id));
+create policy organizations_admin_update on public.organizations for update to authenticated using (public.is_admin(id)) with check (public.is_admin(id));
+create policy profiles_self_read on public.profiles for select to authenticated using (id = auth.uid());
+create policy profiles_self_update on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+create policy memberships_member_read on public.memberships for select to authenticated using (public.is_org_member(organization_id));
+create policy memberships_admin_manage on public.memberships for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy settings_admin_manage on public.business_settings for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+
+create policy categories_staff_read on public.categories for select to authenticated using (public.is_staff(organization_id));
+create policy categories_admin_write on public.categories for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy suppliers_admin_only on public.suppliers for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy products_staff_read on public.products for select to authenticated using (public.is_staff(organization_id));
+create policy products_staff_write on public.products for insert to authenticated with check (public.is_staff(organization_id));
+create policy products_staff_update on public.products for update to authenticated using (public.is_staff(organization_id)) with check (public.is_staff(organization_id));
+create policy products_admin_delete on public.products for delete to authenticated using (public.is_admin(organization_id));
+create policy stock_staff_read on public.stock_movements for select to authenticated using (public.is_staff(organization_id));
+create policy stock_staff_insert on public.stock_movements for insert to authenticated with check (public.is_staff(organization_id));
+
+create policy customers_staff_read on public.customers for select to authenticated using (public.is_staff(organization_id));
+create policy customers_staff_write on public.customers for insert to authenticated with check (public.is_staff(organization_id));
+create policy customers_staff_update on public.customers for update to authenticated using (public.is_staff(organization_id)) with check (public.is_staff(organization_id));
+create policy addresses_staff_read on public.customer_addresses for select to authenticated using (public.is_staff(organization_id));
+create policy addresses_staff_write on public.customer_addresses for all to authenticated using (public.is_staff(organization_id)) with check (public.is_staff(organization_id));
+create policy sellers_admin_only on public.sellers for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+
+create policy sales_staff_read on public.sales for select to authenticated using (public.is_staff(organization_id));
+create policy sales_staff_write on public.sales for insert to authenticated with check (public.is_staff(organization_id));
+create policy sales_staff_update on public.sales for update to authenticated using (public.is_staff(organization_id)) with check (public.is_staff(organization_id));
+create policy sale_items_staff_read on public.sale_items for select to authenticated using (public.is_staff(organization_id));
+create policy sale_items_staff_write on public.sale_items for insert to authenticated with check (public.is_staff(organization_id));
+create policy idempotency_staff_write on public.sale_idempotency for all to authenticated using (public.is_staff(organization_id)) with check (public.is_staff(organization_id));
+create policy payments_staff_read on public.payments for select to authenticated using (public.is_staff(organization_id));
+create policy payments_staff_write on public.payments for insert to authenticated with check (public.is_staff(organization_id));
+
+create policy packaging_staff_access on public.packaging_records for all to authenticated using (public.is_staff(organization_id)) with check (public.is_staff(organization_id));
+create policy packaging_events_staff_read on public.packaging_events for select to authenticated using (public.is_staff(organization_id));
+create policy packaging_events_staff_insert on public.packaging_events for insert to authenticated with check (public.is_staff(organization_id));
+create policy delivery_staff_read on public.delivery_assignments for select to authenticated using (public.is_staff(organization_id) or (public.is_rider(organization_id) and rider_user_id = auth.uid()));
+create policy delivery_staff_insert on public.delivery_assignments for insert to authenticated with check (public.is_staff(organization_id));
+create policy delivery_staff_update on public.delivery_assignments for update to authenticated using (public.is_staff(organization_id)) with check (public.is_staff(organization_id));
+create policy delivery_rider_progress on public.delivery_assignments for update to authenticated using (public.is_rider(organization_id) and rider_user_id = auth.uid()) with check (public.is_rider(organization_id) and rider_user_id = auth.uid());
+create policy delivery_events_read on public.delivery_events for select to authenticated using (public.is_staff(organization_id) or exists (select 1 from public.delivery_assignments d where d.organization_id = delivery_events.organization_id and d.id = delivery_events.delivery_assignment_id and d.rider_user_id = auth.uid()));
+create policy delivery_events_insert on public.delivery_events for insert to authenticated with check (public.is_staff(organization_id) or (public.is_rider(organization_id) and actor_user_id = auth.uid()));
+
+create policy returns_admin_access on public.returns for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy return_items_admin_access on public.return_items for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy refunds_admin_access on public.refunds for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy expenses_admin_access on public.expense_categories for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy costs_admin_access on public.operational_costs for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy audit_admin_read on public.audit_logs for select to authenticated using (public.is_admin(organization_id));
+create policy audit_staff_insert on public.audit_logs for insert to authenticated with check (public.is_staff(organization_id) and actor_user_id = auth.uid());
+create policy consents_admin_access on public.communication_consents for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+create policy communications_admin_access on public.communication_logs for all to authenticated using (public.is_admin(organization_id)) with check (public.is_admin(organization_id));
+
+revoke update, delete on public.stock_movements from authenticated;
+revoke update, delete on public.audit_logs from authenticated;

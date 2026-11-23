@@ -1,0 +1,14 @@
+:root {
+  --color-page: #f8fafc;
+  --color-sidebar: #172554;
+  --color-primary: #2563eb;
+  --color-primary-soft: #eff6ff;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --radius-control: 0.6rem;
+  --shadow-panel: 0 8px 24px rgb(15 23 42 / 0.06);
+}

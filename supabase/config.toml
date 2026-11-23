@@ -1,0 +1,3 @@
+# Local Supabase CLI configuration is intentionally minimal for Task 01.
+# Database schemas, auth policies, and storage buckets are defined in later tasks.
+project_id = "saga-inventory"

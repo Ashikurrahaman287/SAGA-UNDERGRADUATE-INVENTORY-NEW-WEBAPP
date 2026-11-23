@@ -1,0 +1,64 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { z } from 'zod';
+import { getRequestId } from '../request-id';
+import { sendError, sendJson } from '../response';
+import { SecurityError } from './security';
+
+export async function readJson(request: VercelRequest): Promise<unknown> {
+  if (!request.body) return {};
+  if (typeof request.body === 'object') return request.body;
+  try {
+    return JSON.parse(request.body as string);
+  } catch {
+    throw new SecurityError('Invalid JSON body.', 'INVALID_JSON');
+  }
+}
+
+export function methodNotAllowed(
+  request: VercelRequest,
+  response: VercelResponse,
+  allowed = 'POST',
+): boolean {
+  if (request.method === allowed) return false;
+  response.setHeader('Allow', allowed);
+  sendError(response, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed.', getRequestId(request));
+  return true;
+}
+
+export function sendAuthFailure(
+  response: VercelResponse,
+  request: VercelRequest,
+  error: unknown,
+): void {
+  const requestId = getRequestId(request);
+  if (error instanceof SecurityError) {
+    sendError(
+      response,
+      error.code === 'CSRF_FAILED' || error.code === 'INVALID_ORIGIN' ? 403 : 400,
+      error.code,
+      error.message,
+      requestId,
+    );
+    return;
+  }
+  if (error instanceof z.ZodError) {
+    sendError(response, 400, 'INVALID_REQUEST', 'The request could not be processed.', requestId);
+    return;
+  }
+  sendError(
+    response,
+    500,
+    'AUTHENTICATION_ERROR',
+    'The authentication service is temporarily unavailable.',
+    requestId,
+  );
+}
+
+export function jsonSuccess(
+  response: VercelResponse,
+  request: VercelRequest,
+  status: number,
+  body: unknown,
+): void {
+  sendJson(response, status, body, getRequestId(request));
+}

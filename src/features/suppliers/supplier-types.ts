@@ -1,0 +1,31 @@
+export type Supplier = {
+  id: string;
+  name: string;
+  contact_person?: string | null;
+  phone?: string | null;
+  alternative_phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
+  website?: string | null;
+  reference_code?: string | null;
+  notes?: string | null;
+  product_count?: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+export type Seller = {
+  id: string;
+  name: string;
+  reference_code?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  total_sales?: number;
+  sales_value?: number | string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
