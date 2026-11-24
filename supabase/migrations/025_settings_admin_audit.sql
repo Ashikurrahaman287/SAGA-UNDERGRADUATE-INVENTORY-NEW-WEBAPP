@@ -527,3 +527,47 @@ for each row execute function public.apply_current_receipt_prefix();
 create trigger receipts_current_receipt_prefix
 before insert on public.receipts
 for each row execute function public.apply_current_receipt_prefix();
+
+create or replace function public.consume_communication_rate_limit(
+  p_organization_id uuid,
+  p_scope_key text,
+  p_limit integer,
+  p_window_seconds integer
+) returns table (allowed boolean, retry_after_seconds integer)
+language plpgsql
+security definer
+set search_path = pg_catalog, public, auth
+as $$
+declare
+  started timestamptz;
+  attempts_count integer;
+begin
+  if not public.is_admin(p_organization_id) then
+    raise exception 'Communication access denied';
+  end if;
+  if p_limit < 1 or p_window_seconds < 1 or length(p_scope_key) not between 1 and 200 then
+    raise exception 'Invalid rate limit parameters';
+  end if;
+  insert into public.communication_rate_limits (
+    organization_id, scope_key, window_started_at, attempts, updated_at
+  ) values (p_organization_id, p_scope_key, now(), 1, now())
+  on conflict (organization_id, scope_key) do update set
+    window_started_at = case
+      when public.communication_rate_limits.window_started_at <= now() - (p_window_seconds * interval '1 second') then now()
+      else public.communication_rate_limits.window_started_at
+    end,
+    attempts = case
+      when public.communication_rate_limits.window_started_at <= now() - (p_window_seconds * interval '1 second') then 1
+      else public.communication_rate_limits.attempts + 1
+    end,
+    updated_at = now();
+  select r.window_started_at, r.attempts into started, attempts_count
+  from public.communication_rate_limits r
+  where r.organization_id = p_organization_id and r.scope_key = p_scope_key;
+  return query select attempts_count <= p_limit,
+    greatest(1, ceil(extract(epoch from (started + (p_window_seconds * interval '1 second') - now())))::integer);
+end;
+$$;
+
+revoke all on function public.consume_communication_rate_limit(uuid, text, integer, integer) from public;
+grant execute on function public.consume_communication_rate_limit(uuid, text, integer, integer) to authenticated;
