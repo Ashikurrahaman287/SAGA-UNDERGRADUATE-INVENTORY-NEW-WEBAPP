@@ -2,8 +2,12 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isServerConfigurationReady } from './lib/env';
 import { getRequestId } from './lib/request-id';
 import { sendJson } from './lib/response';
+import { getSupabaseServerClient } from './lib/supabase';
 
-export default function ready(request: VercelRequest, response: VercelResponse): void {
+export default async function ready(
+  request: VercelRequest,
+  response: VercelResponse,
+): Promise<void> {
   const requestId = getRequestId(request);
   if (request.method !== 'GET') {
     response.setHeader('Allow', 'GET');
@@ -16,12 +20,26 @@ export default function ready(request: VercelRequest, response: VercelResponse):
     return;
   }
   const configured = isServerConfigurationReady();
+  let databaseReady = false;
+  if (configured) {
+    try {
+      const { error } = await getSupabaseServerClient().from('organizations').select('id').limit(1);
+      databaseReady = !error;
+    } catch {
+      databaseReady = false;
+    }
+  }
+  const readyState = configured && databaseReady;
   sendJson(
     response,
-    configured ? 200 : 503,
+    readyState ? 200 : 503,
     {
-      status: configured ? 'ready' : 'not_ready',
+      status: readyState ? 'ready' : 'not_ready',
       service: 'saga-inventory-api',
+      checks: {
+        configuration: configured ? 'ready' : 'missing',
+        database: databaseReady ? 'ready' : 'unavailable',
+      },
       requestId,
     },
     requestId,

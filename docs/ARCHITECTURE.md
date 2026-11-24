@@ -31,7 +31,7 @@ Products and inventory use organization-scoped RPC workflows for opening stock a
 
 Customers use the existing organization-scoped records with server-side list aggregation, append-only notes, transactional default-address switching, and Admin-only consent mutation. General customer data is never exposed to Riders.
 
-Supplier and seller management reuse the existing product/sales foreign keys and are Admin-only business-record modules. Sellers never become authentication roles; Sales attribution remains a documented future workflow contract.
+Returns use an organization-scoped PostgreSQL transaction RPC that validates cumulative quantities, historical prices, restock decisions, refunds, idempotency, and audit writes. Supplier and seller management reuse the existing product/sales foreign keys and are Admin-only business-record modules. Sellers never become authentication roles. Sales creation uses an organization-scoped PostgreSQL transaction RPC for authoritative totals, stock deductions, payment records, receipt generation, and idempotency.
 
 ## Deployment architecture
 

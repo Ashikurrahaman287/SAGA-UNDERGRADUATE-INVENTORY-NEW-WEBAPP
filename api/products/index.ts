@@ -5,6 +5,7 @@ import { sendJson } from '../lib/response';
 import { readJson, sendAuthFailure, methodNotAllowed } from '../lib/auth/http';
 import { requirePermission } from '../lib/auth/authorization-context';
 import { permissions } from '../../src/lib/permissions/permission-registry';
+import { getSupabaseServerClient } from '../lib/supabase';
 
 const listSchema = z.object({
   search: z.string().trim().max(100).optional(),
@@ -75,22 +76,18 @@ export default async function products(
         p_offset: (input.page - 1) * input.pageSize,
       });
       if (result.error) throw result.error;
-      sendJson(
-        response,
-        200,
-        {
-          ...(result.data || { items: [], total: 0 }),
-          page: input.page,
-          pageSize: input.pageSize,
-          requestId: getRequestId(request),
-        },
-        getRequestId(request),
-      );
+      const { data: settings, error: settingsError } = await getSupabaseServerClient()
+        .from('business_settings')
+        .select('low_stock_threshold')
+        .eq('organization_id', context.organization.id)
+        .maybeSingle();
+      if (settingsError) throw settingsError;
       sendJson(
         response,
         200,
         {
           data: result.data || { items: [], total: 0 },
+          defaultLowStockThreshold: settings?.low_stock_threshold ?? 0,
           page: input.page,
           pageSize: input.pageSize,
           requestId: getRequestId(request),

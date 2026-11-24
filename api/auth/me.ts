@@ -47,6 +47,8 @@ export default async function me(request: VercelRequest, response: VercelRespons
         organization: {
           id: context.organization.organizationId,
           name: context.organization.organizationName,
+          currency: context.organization.currency,
+          timezone: context.organization.timezone,
         },
         role: context.organization.role,
       },

@@ -13,10 +13,8 @@ import type { Category, Product, ProductListResponse, ProductSummary } from './p
 import { ActiveBadge, StockStatusBadge } from './ProductStatusBadge';
 import { ProductForm } from './ProductForm';
 
-function money(value: number | string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(
-    Number(value),
-  );
+function money(value: number | string, currency: string): string {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value));
 }
 function number(value: number | string): string {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(Number(value));
@@ -28,6 +26,7 @@ export function ProductCatalogPage({
   lowStockOnly?: boolean;
 }): ReactElement {
   const auth = useAuth();
+  const currency = auth.session?.organization.currency || 'USD';
   const role = auth.session?.role;
   const [search, setSearch] = useState('');
   const [active, setActive] = useState('true');
@@ -125,6 +124,7 @@ export function ProductCatalogPage({
           )}
           <ProductForm
             categories={categories.data?.data.data || []}
+            initial={{ lowStockThreshold: query.data?.data.defaultLowStockThreshold ?? 0 }}
             canChooseSupplier={role === 'admin'}
             onSubmit={createProduct}
             onCancel={() => setShowForm(false)}
@@ -196,7 +196,7 @@ export function ProductCatalogPage({
           }
         />
       ) : (
-        <ProductTable items={items} />
+        <ProductTable items={items} currency={currency} />
       )}
       {total > 20 && (
         <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
@@ -248,7 +248,7 @@ function SummaryCard({
     </div>
   );
 }
-function ProductTable({ items }: { items: Product[] }): ReactElement {
+function ProductTable({ items, currency }: { items: Product[]; currency: string }): ReactElement {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full min-w-[980px] text-left text-sm">
@@ -281,8 +281,8 @@ function ProductTable({ items }: { items: Product[] }): ReactElement {
                 {product.category_name || 'Uncategorized'}
               </td>
               <td className="px-5 py-4 text-slate-600">{product.supplier_name || '—'}</td>
-              <td className="px-5 py-4 text-slate-700">{money(product.cost_price)}</td>
-              <td className="px-5 py-4 text-slate-700">{money(product.selling_price)}</td>
+              <td className="px-5 py-4 text-slate-700">{money(product.cost_price, currency)}</td>
+              <td className="px-5 py-4 text-slate-700">{money(product.selling_price, currency)}</td>
               <td className="px-5 py-4 font-semibold text-slate-800">
                 {number(product.quantity)} {product.unit}
               </td>

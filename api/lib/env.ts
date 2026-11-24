@@ -5,6 +5,11 @@ const serverEnvSchema = z.object({
   SUPABASE_ANON_KEY: z.string().min(1).optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   AUTH_REDIRECT_URL: z.string().url().optional(),
+  SWIFTSMS_API_KEY: z.string().min(1).optional(),
+  SWIFTSMS_BASE_URL: z.string().url().optional(),
+  EMAIL_PROVIDER: z.enum(['none', 'smtp', 'resend', 'postmark', 'sendgrid']).optional(),
+  EMAIL_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM_ADDRESS: z.string().email().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ReactElement, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ForgotPasswordPage, ResetPasswordPage } from '../features/auth/PasswordPages';
@@ -8,16 +8,6 @@ import { WelcomePage } from '../features/dashboard/WelcomePage';
 import { LoadingState } from '../components/common/States';
 import { HomePage } from '../features/shell/HomePage';
 import { NotFoundPage } from '../features/shell/NotFoundPage';
-import { PlaceholderPage } from '../features/shell/PlaceholderPage';
-import { ProductCatalogPage } from '../features/products/ProductCatalogPage';
-import { ProductDetailPage } from '../features/products/ProductDetailPage';
-import { CategoryPage } from '../features/products/CategoryPage';
-import { CustomerListPage } from '../features/customers/CustomerListPage';
-import { CustomerDetailPage } from '../features/customers/CustomerDetailPage';
-import { SupplierListPage } from '../features/suppliers/SupplierListPage';
-import { SupplierDetailPage } from '../features/suppliers/SupplierDetailPage';
-import { SellerListPage } from '../features/suppliers/SellerListPage';
-import { SellerDetailPage } from '../features/suppliers/SellerDetailPage';
 import { permissions } from '../lib/permissions/permission-registry';
 
 const DashboardPage = lazy(() =>
@@ -25,6 +15,122 @@ const DashboardPage = lazy(() =>
     default: module.DashboardPage,
   })),
 );
+const ProductCatalogPage = lazy(() =>
+  import('../features/products/ProductCatalogPage').then((module) => ({
+    default: module.ProductCatalogPage,
+  })),
+);
+const ProductDetailPage = lazy(() =>
+  import('../features/products/ProductDetailPage').then((module) => ({
+    default: module.ProductDetailPage,
+  })),
+);
+const CategoryPage = lazy(() =>
+  import('../features/products/CategoryPage').then((module) => ({ default: module.CategoryPage })),
+);
+const CustomerListPage = lazy(() =>
+  import('../features/customers/CustomerListPage').then((module) => ({
+    default: module.CustomerListPage,
+  })),
+);
+const CustomerDetailPage = lazy(() =>
+  import('../features/customers/CustomerDetailPage').then((module) => ({
+    default: module.CustomerDetailPage,
+  })),
+);
+const SupplierListPage = lazy(() =>
+  import('../features/suppliers/SupplierListPage').then((module) => ({
+    default: module.SupplierListPage,
+  })),
+);
+const SupplierDetailPage = lazy(() =>
+  import('../features/suppliers/SupplierDetailPage').then((module) => ({
+    default: module.SupplierDetailPage,
+  })),
+);
+const SellerListPage = lazy(() =>
+  import('../features/suppliers/SellerListPage').then((module) => ({
+    default: module.SellerListPage,
+  })),
+);
+const SellerDetailPage = lazy(() =>
+  import('../features/suppliers/SellerDetailPage').then((module) => ({
+    default: module.SellerDetailPage,
+  })),
+);
+const PackagingPage = lazy(() =>
+  import('../features/fulfillment/PackagingPage').then((module) => ({
+    default: module.PackagingPage,
+  })),
+);
+const DeliveryPage = lazy(() =>
+  import('../features/fulfillment/DeliveryPage').then((module) => ({
+    default: module.DeliveryPage,
+  })),
+);
+const PackingSlipPage = lazy(() =>
+  import('../features/fulfillment/PackingSlipPage').then((module) => ({
+    default: module.PackingSlipPage,
+  })),
+);
+const ReturnsListPage = lazy(() =>
+  import('../features/returns/ReturnsListPage').then((module) => ({
+    default: module.ReturnsListPage,
+  })),
+);
+const CreateReturnPage = lazy(() =>
+  import('../features/returns/CreateReturnPage').then((module) => ({
+    default: module.CreateReturnPage,
+  })),
+);
+const ReturnDetailPage = lazy(() =>
+  import('../features/returns/ReturnDetailPage').then((module) => ({
+    default: module.ReturnDetailPage,
+  })),
+);
+const NewSalePage = lazy(() =>
+  import('../features/sales/NewSalePage').then((module) => ({ default: module.NewSalePage })),
+);
+const SalesHistoryPage = lazy(() =>
+  import('../features/sales/SalesHistoryPage').then((module) => ({
+    default: module.SalesHistoryPage,
+  })),
+);
+const SaleDetailPage = lazy(() =>
+  import('../features/sales/SaleDetailPage').then((module) => ({ default: module.SaleDetailPage })),
+);
+const ReceiptPage = lazy(() =>
+  import('../features/sales/ReceiptPage').then((module) => ({ default: module.ReceiptPage })),
+);
+const CommunicationsPage = lazy(() =>
+  import('../features/communications/CommunicationsPage').then((module) => ({
+    default: module.CommunicationsPage,
+  })),
+);
+const PlaceholderPage = lazy(() =>
+  import('../features/shell/PlaceholderPage').then((module) => ({
+    default: module.PlaceholderPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import('../features/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })),
+);
+const UsersPage = lazy(() =>
+  import('../features/settings/UsersPage').then((module) => ({ default: module.UsersPage })),
+);
+const AuditLogsPage = lazy(() =>
+  import('../features/settings/AuditLogsPage').then((module) => ({
+    default: module.AuditLogsPage,
+  })),
+);
+
+function routeElement(element: ReactNode, label: string): ReactElement {
+  return <Suspense fallback={<LoadingState label={label} />}>{element}</Suspense>;
+}
+
+function placeholderElement(): ReactElement {
+  return routeElement(<PlaceholderPage />, 'Loading workspace');
+}
 
 export const router = createBrowserRouter([
   { path: '/', element: <WelcomePage /> },
@@ -56,38 +162,76 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       {
         path: 'dashboard',
+        element: routeElement(<DashboardPage />, 'Loading dashboard'),
+      },
+      { path: 'products', element: routeElement(<ProductCatalogPage />, 'Loading products') },
+      { path: 'products/:id', element: routeElement(<ProductDetailPage />, 'Loading product') },
+      { path: 'categories', element: routeElement(<CategoryPage />, 'Loading categories') },
+      {
+        path: 'inventory',
+        element: routeElement(<ProductCatalogPage lowStockOnly />, 'Loading inventory'),
+      },
+      { path: 'customers', element: routeElement(<CustomerListPage />, 'Loading customers') },
+      { path: 'customers/:id', element: routeElement(<CustomerDetailPage />, 'Loading customer') },
+      { path: 'suppliers', element: routeElement(<SupplierListPage />, 'Loading suppliers') },
+      { path: 'suppliers/:id', element: routeElement(<SupplierDetailPage />, 'Loading supplier') },
+      { path: 'sellers', element: routeElement(<SellerListPage />, 'Loading sellers') },
+      { path: 'sellers/:id', element: routeElement(<SellerDetailPage />, 'Loading seller') },
+      { path: 'sales/new', element: routeElement(<NewSalePage />, 'Loading sale workspace') },
+      {
+        path: 'sales/history',
+        element: routeElement(<SalesHistoryPage />, 'Loading sales history'),
+      },
+      { path: 'sales/:id', element: routeElement(<SaleDetailPage />, 'Loading sale') },
+      { path: 'sales/:id/receipt', element: routeElement(<ReceiptPage />, 'Loading receipt') },
+      { path: 'packaging', element: routeElement(<PackagingPage />, 'Loading packaging') },
+      { path: 'delivery', element: routeElement(<DeliveryPage />, 'Loading deliveries') },
+      {
+        path: 'deliveries/:saleId/packing-slip',
+        element: routeElement(<PackingSlipPage />, 'Loading packing slip'),
+      },
+      {
+        path: 'packaging/:saleId/slip',
+        element: routeElement(<PackingSlipPage />, 'Loading packing slip'),
+      },
+      { path: 'payments', element: placeholderElement() },
+      { path: 'returns', element: routeElement(<ReturnsListPage />, 'Loading returns') },
+      { path: 'returns/new', element: routeElement(<CreateReturnPage />, 'Loading return form') },
+      { path: 'returns/:id', element: routeElement(<ReturnDetailPage />, 'Loading return') },
+      { path: 'costs', element: placeholderElement() },
+      { path: 'accounting', element: placeholderElement() },
+      { path: 'reports', element: placeholderElement() },
+      { path: 'reports/products', element: placeholderElement() },
+      {
+        path: 'communications',
+        element: routeElement(<CommunicationsPage />, 'Loading communications'),
+      },
+      { path: 'crm', element: placeholderElement() },
+      { path: 'investments', element: placeholderElement() },
+      {
+        path: 'users',
         element: (
-          <Suspense fallback={<LoadingState label="Loading dashboard" />}>
-            <DashboardPage />
-          </Suspense>
+          <ProtectedRoute permission={permissions.usersView}>
+            {routeElement(<UsersPage />, 'Loading user administration')}
+          </ProtectedRoute>
         ),
       },
-      { path: 'products', element: <ProductCatalogPage /> },
-      { path: 'products/:id', element: <ProductDetailPage /> },
-      { path: 'categories', element: <CategoryPage /> },
-      { path: 'inventory', element: <ProductCatalogPage lowStockOnly /> },
-      { path: 'customers', element: <CustomerListPage /> },
-      { path: 'customers/:id', element: <CustomerDetailPage /> },
-      { path: 'suppliers', element: <SupplierListPage /> },
-      { path: 'suppliers/:id', element: <SupplierDetailPage /> },
-      { path: 'sellers', element: <SellerListPage /> },
-      { path: 'sellers/:id', element: <SellerDetailPage /> },
-      { path: 'sales/new', element: <PlaceholderPage /> },
-      { path: 'sales/history', element: <PlaceholderPage /> },
-      { path: 'packaging', element: <PlaceholderPage /> },
-      { path: 'delivery', element: <PlaceholderPage /> },
-      { path: 'payments', element: <PlaceholderPage /> },
-      { path: 'returns', element: <PlaceholderPage /> },
-      { path: 'costs', element: <PlaceholderPage /> },
-      { path: 'accounting', element: <PlaceholderPage /> },
-      { path: 'reports', element: <PlaceholderPage /> },
-      { path: 'reports/products', element: <PlaceholderPage /> },
-      { path: 'communications', element: <PlaceholderPage /> },
-      { path: 'crm', element: <PlaceholderPage /> },
-      { path: 'investments', element: <PlaceholderPage /> },
-      { path: 'users', element: <PlaceholderPage /> },
-      { path: 'settings', element: <PlaceholderPage /> },
-      { path: 'audit-logs', element: <PlaceholderPage /> },
+      {
+        path: 'settings',
+        element: (
+          <ProtectedRoute permission={permissions.settingsView}>
+            {routeElement(<SettingsPage />, 'Loading organization settings')}
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'audit-logs',
+        element: (
+          <ProtectedRoute permission={permissions.auditLogsView}>
+            {routeElement(<AuditLogsPage />, 'Loading audit history')}
+          </ProtectedRoute>
+        ),
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

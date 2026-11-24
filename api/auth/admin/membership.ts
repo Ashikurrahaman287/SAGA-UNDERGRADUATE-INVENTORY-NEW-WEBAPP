@@ -36,7 +36,7 @@ export default async function membership(
     const admin = getSupabaseServerClient();
     const { data: membership, error: lookupError } = await admin
       .from('memberships')
-      .select('id, organization_id, user_id')
+      .select('id, organization_id, user_id, role, is_active')
       .eq('id', input.membershipId)
       .eq('organization_id', context.organization.id)
       .maybeSingle();
@@ -49,30 +49,39 @@ export default async function membership(
       );
       return;
     }
-    const changes: { role?: string; is_active?: boolean } = {};
-    if (input.role) changes.role = input.role;
-    if (input.isActive !== undefined) changes.is_active = input.isActive;
-    if (Object.keys(changes).length) {
-      const { error } = await admin.from('memberships').update(changes).eq('id', membership.id);
+    const accessChanged =
+      (input.role !== undefined && input.role !== membership.role) ||
+      (input.isActive !== undefined && input.isActive !== membership.is_active);
+    if (accessChanged) {
+      const { error } = await admin.rpc('admin_update_membership', {
+        p_organization_id: context.organization.id,
+        p_actor_user_id: context.auth.user.id,
+        p_membership_id: membership.id,
+        p_role: input.role || null,
+        p_is_active: input.isActive ?? null,
+        p_rider_eligible: null,
+        p_request_id: requestId,
+      });
       if (error) throw error;
     }
-    if (input.revokeSessions) {
+    if (input.revokeSessions || accessChanged) {
       const { error } = await admin.auth.admin.signOut(membership.user_id, 'global');
       if (error) throw error;
     }
-    await recordAuthEvent({
-      action:
-        input.isActive === false
-          ? 'account_deactivated'
-          : input.revokeSessions
-            ? 'session_revoked'
-            : 'membership_updated',
-      actorUserId: context.auth.user.id,
-      entityId: membership.user_id,
+    if (input.revokeSessions && !accessChanged)
+      await recordAuthEvent({
+        action: 'session_revoked',
+        actorUserId: context.auth.user.id,
+        entityId: membership.user_id,
+        requestId,
+        organizationId: context.organization.id,
+      });
+    sendJson(
+      response,
+      200,
+      { updated: true, sessionsRevoked: input.revokeSessions || accessChanged },
       requestId,
-      organizationId: context.organization.id,
-    });
-    sendJson(response, 200, { updated: true }, requestId);
+    );
   } catch (error) {
     sendAuthFailure(response, request, error);
   }

@@ -78,17 +78,32 @@ export const navigationGroups: readonly NavigationGroup[] = [
   {
     label: 'Sales & Fulfillment',
     items: [
-      item('New Sale', '/app/sales/new', permissions.salesCreate, ShoppingCart),
-      item('Sales History', '/app/sales/history', permissions.salesView, Receipt),
-      item('Packaging', '/app/packaging', permissions.packagingView, PackageCheck),
-      item('Delivery', '/app/delivery', permissions.deliveryView, Truck),
+      {
+        ...item('New Sale', '/app/sales/new', permissions.salesCreate, ShoppingCart),
+        implemented: true,
+      },
+      {
+        ...item('Sales History', '/app/sales/history', permissions.salesView, Receipt),
+        implemented: true,
+      },
+      {
+        ...item('Packaging', '/app/packaging', permissions.packagingView, PackageCheck),
+        implemented: true,
+      },
+      {
+        ...item('Delivery', '/app/delivery', permissions.deliveryView, Truck),
+        implemented: true,
+      },
     ],
   },
   {
     label: 'Finance',
     items: [
       item('Payments', '/app/payments', permissions.paymentsView, CreditCard),
-      item('Returns & Refunds', '/app/returns', permissions.returnsView, Receipt),
+      {
+        ...item('Returns & Refunds', '/app/returns', permissions.returnsView, Receipt),
+        implemented: true,
+      },
       item('Operational Costs', '/app/costs', permissions.accountingManage, HandCoins),
       item('Accounting', '/app/accounting', permissions.accountingView, FileBarChart),
     ],
@@ -105,7 +120,7 @@ export const navigationGroups: readonly NavigationGroup[] = [
     items: [
       {
         ...item('SMS & Email', '/app/communications', permissions.communicationsView, Mail),
-        implemented: false,
+        implemented: true,
       },
     ],
   },
@@ -114,9 +129,9 @@ export const navigationGroups: readonly NavigationGroup[] = [
     items: [
       item('CRM & Loyalty', '/app/crm', permissions.crmView, Users),
       item('Investments', '/app/investments', permissions.investmentsView, HandCoins),
-      item('User Management', '/app/users', permissions.usersView, Users),
-      item('Settings', '/app/settings', permissions.settingsView, Settings),
-      item('Audit Logs', '/app/audit-logs', permissions.auditLogsView, ClipboardList),
+      { ...item('User Management', '/app/users', permissions.usersView, Users), implemented: true },
+      { ...item('Settings', '/app/settings', permissions.settingsView, Settings), implemented: true },
+      { ...item('Audit Logs', '/app/audit-logs', permissions.auditLogsView, ClipboardList), implemented: true },
     ],
   },
 ];

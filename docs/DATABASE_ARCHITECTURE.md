@@ -22,8 +22,13 @@ Task 02 creates the PostgreSQL foundation only. It does not create Auth users, p
 16. `016_customer_management.sql` adds notes, richer address/consent fields, customer creation/list RPCs, and default-address support.
 17. `017_customer_summary.sql` adds numeric customer total and organization metrics RPCs.
 18. `018_suppliers_sellers_management.sql` adds supplier/seller fields, Admin-only aggregation RPCs, and archived-supplier assignment protection.
-19. `016_customer_management.sql` adds notes, richer address/consent fields, customer creation/list RPCs, and default-address support.
-20. `017_customer_summary.sql` adds numeric customer total and organization metrics RPCs.
+19. `019_sales_transaction.sql` adds atomic sale creation, concurrent idempotency, receipt sequencing, stock deductions, payment/receipt/packaging writes, and direct-mutation guards.
+20. `020_sales_history.sql` adds sales-history indexes and RPCs for filtered pagination plus payment-safe summary aggregation.
+21. `021_fulfillment_workflows.sql` adds idempotent packaging/delivery/payment RPCs, fulfillment indexes, and RPC-only write policies.
+22. `022_returns_refunds.sql` adds Moderator return policy, return idempotency, atomic stock/refund RPC, sequence state, and RPC-only return writes.
+23. `023_communications.sql` adds communication templates, recipient/provider fields, send idempotency indexes, and persistent rate limits.
+24. `024_communications_dispatch.sql` adds queued send reservation/completion RPCs.
+25. `025_settings_admin_audit.sql` adds organization and receipt settings, Rider eligibility enforcement, immutable categorized audit snapshots, and Admin-only settings/member/audit RPCs.
 
 ## Entity relationships
 

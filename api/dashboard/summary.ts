@@ -20,7 +20,7 @@ export default async function dashboardSummary(
     if (!context) return;
     const { data: organization, error: organizationError } = await context.client
       .from('organizations')
-      .select('timezone')
+      .select('timezone, currency')
       .eq('id', context.organization.id)
       .maybeSingle();
     if (organizationError || !organization?.timezone)
@@ -36,7 +36,12 @@ export default async function dashboardSummary(
       p_end: range.end.toISOString(),
     });
     if (error) throw error;
-    sendJson(response, 200, { data, requestId }, requestId);
+    sendJson(
+      response,
+      200,
+      { data: { ...data, currency: organization.currency }, requestId },
+      requestId,
+    );
   } catch (error) {
     sendAuthFailure(response, request, error);
   }

@@ -58,6 +58,29 @@ export function AuthProvider({ children }: PropsWithChildren): ReactElement {
     };
   }, []);
 
+  useEffect(() => {
+    let lastSync = Date.now();
+    const syncSession = async (): Promise<void> => {
+      try {
+        const [token, session] = await Promise.all([getCsrfToken(), readSession()]);
+        setCsrfToken(token);
+        setState(session ? { status: 'authenticated', session } : { status: 'unauthenticated' });
+      } catch (error) {
+        setState({
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Authentication is unavailable.',
+        });
+      }
+    };
+    const onFocus = (): void => {
+      if (Date.now() - lastSync < 30_000) return;
+      lastSync = Date.now();
+      void syncSession();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
   const logout = async (): Promise<void> => {
     await fetch('/api/auth/logout', {
       method: 'POST',

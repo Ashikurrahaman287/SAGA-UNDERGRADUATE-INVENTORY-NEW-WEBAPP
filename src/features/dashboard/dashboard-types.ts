@@ -1,5 +1,6 @@
 export type DashboardMoney = number | string;
 export type DashboardSummary = {
+  currency?: string;
   period: { start: string; end: string; timezone: string };
   kpis: {
     salesCount: number;

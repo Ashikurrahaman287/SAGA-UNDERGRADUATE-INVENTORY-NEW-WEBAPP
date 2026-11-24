@@ -88,6 +88,7 @@ export function DashboardPage(): ReactElement {
     staleTime: 30_000,
   });
   const summary = query.data?.data.data;
+  const currency = summary?.currency || 'USD';
   return (
     <PageContainer>
       <PageHeader
@@ -145,7 +146,7 @@ export function DashboardPage(): ReactElement {
       )}
       {query.isPending && <DashboardLoading />}
       {query.isError && <ErrorState onRetry={() => void query.refetch()} />}
-      {summary && <DashboardContent summary={summary} />}
+      {summary && <DashboardContent summary={summary} currency={currency} />}
     </PageContainer>
   );
 }
@@ -183,7 +184,13 @@ function DashboardLoading(): ReactElement {
     </div>
   );
 }
-function DashboardContent({ summary }: { summary: DashboardSummary }): ReactElement {
+function DashboardContent({
+  summary,
+  currency,
+}: {
+  summary: DashboardSummary;
+  currency: string;
+}): ReactElement {
   const kpi = summary.kpis;
   return (
     <>
@@ -192,14 +199,14 @@ function DashboardContent({ summary }: { summary: DashboardSummary }): ReactElem
           icon={<ShoppingCart />}
           label="Total sales"
           value={quantity(kpi.salesCount)}
-          detail={money(kpi.salesValue)}
+          detail={money(kpi.salesValue, currency)}
           href="/app/sales/history"
           tone="blue"
         />
         <Kpi
           icon={<DollarSign />}
           label="Revenue"
-          value={money(kpi.revenue)}
+          value={money(kpi.revenue, currency)}
           detail="Recognized valid sales value"
           href="/app/sales/history"
           tone="green"
@@ -207,7 +214,7 @@ function DashboardContent({ summary }: { summary: DashboardSummary }): ReactElem
         <Kpi
           icon={<Wallet />}
           label="Payments due"
-          value={money(kpi.paymentsDue)}
+          value={money(kpi.paymentsDue, currency)}
           detail="Outstanding sale balances"
           href="/app/payments"
           tone="amber"
@@ -215,7 +222,7 @@ function DashboardContent({ summary }: { summary: DashboardSummary }): ReactElem
         <Kpi
           icon={<TrendingUp />}
           label="Gross profit"
-          value={money(kpi.grossProfit)}
+          value={money(kpi.grossProfit, currency)}
           detail={kpi.grossProfit === null ? 'Cost data unavailable' : 'Revenue less item cost'}
           href="/app/reports"
           tone="violet"
@@ -223,7 +230,7 @@ function DashboardContent({ summary }: { summary: DashboardSummary }): ReactElem
         <Kpi
           icon={<Package />}
           label="Stock value"
-          value={money(kpi.stockValue)}
+          value={money(kpi.stockValue, currency)}
           detail="Current quantity × cost price"
           href="/app/inventory"
           tone="blue"
@@ -240,14 +247,14 @@ function DashboardContent({ summary }: { summary: DashboardSummary }): ReactElem
           icon={<RotateCcw />}
           label="Returns"
           value={quantity(kpi.returnCount)}
-          detail={money(kpi.returnValue)}
+          detail={money(kpi.returnValue, currency)}
           href="/app/returns"
           tone="amber"
         />
         <Kpi
           icon={<BarChart3 />}
           label="Net profit"
-          value={money(kpi.netProfit)}
+          value={money(kpi.netProfit, currency)}
           detail="Accounting inputs required"
           href="/app/accounting"
           tone="slate"
@@ -255,14 +262,14 @@ function DashboardContent({ summary }: { summary: DashboardSummary }): ReactElem
       </div>
       <div className="grid gap-5 xl:grid-cols-[1.4fr_0.8fr]">
         <Panel title="Sales and revenue trend" description="Valid sales grouped by business day">
-          <TrendChart items={summary.salesTrend} />
+          <TrendChart items={summary.salesTrend} currency={currency} />
         </Panel>
         <Panel title="Payment overview" description="Persisted sale payment states">
           <Breakdown
             items={summary.paymentOverview.map((item) => ({
               label: statusLabel(item.payment_status),
               value: item.order_count,
-              detail: money(item.amount),
+              detail: money(item.amount, currency),
             }))}
           />
         </Panel>
@@ -351,7 +358,13 @@ function Panel({
     </section>
   );
 }
-function TrendChart({ items }: { items: DashboardSummary['salesTrend'] }): ReactElement {
+function TrendChart({
+  items,
+  currency,
+}: {
+  items: DashboardSummary['salesTrend'];
+  currency: string;
+}): ReactElement {
   if (!items.length)
     return (
       <EmptyState
@@ -370,7 +383,7 @@ function TrendChart({ items }: { items: DashboardSummary['salesTrend'] }): React
           <div
             className="relative w-full rounded-t-md bg-blue-100 transition-colors group-hover:bg-blue-500"
             style={{ height: `${Math.max(4, (Number(item.revenue) / max) * 170)}px` }}
-            title={`${item.day}: ${money(item.revenue)}`}
+            title={`${item.day}: ${money(item.revenue, currency)}`}
           />
           <span className="text-[10px] text-slate-400">{item.day.slice(5)}</span>
         </div>

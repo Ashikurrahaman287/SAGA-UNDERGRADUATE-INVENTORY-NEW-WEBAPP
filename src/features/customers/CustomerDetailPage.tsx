@@ -12,14 +12,13 @@ import { useParams } from 'react-router-dom';
 import type { Consent, Customer, CustomerAddress, CustomerNote } from './customer-types';
 import { CustomerForm } from './CustomerForm';
 
-function money(value: number | string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(
-    Number(value),
-  );
+function money(value: number | string, currency: string): string {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value));
 }
 export function CustomerDetailPage(): ReactElement {
   const { id } = useParams();
   const auth = useAuth();
+  const currency = auth.session?.organization.currency || 'USD';
   const [editing, setEditing] = useState(false);
   const [note, setNote] = useState('');
   const [addressOpen, setAddressOpen] = useState(false);
@@ -146,8 +145,14 @@ export function CustomerDetailPage(): ReactElement {
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Info label="Total orders" value={String(summary.data?.data.data.totalOrders ?? 0)} />
-        <Info label="Total purchase" value={money(summary.data?.data.data.totalPurchase || 0)} />
-        <Info label="Average order" value={money(summary.data?.data.data.averageOrderValue || 0)} />
+        <Info
+          label="Total purchase"
+          value={money(summary.data?.data.data.totalPurchase || 0, currency)}
+        />
+        <Info
+          label="Average order"
+          value={money(summary.data?.data.data.averageOrderValue || 0, currency)}
+        />
         <Info label="Customer since" value={new Date(customer.created_at).toLocaleDateString()} />
       </div>
       <PageSection
@@ -208,7 +213,9 @@ export function CustomerDetailPage(): ReactElement {
                     <td className="px-5 py-3 text-slate-500">
                       {new Date(sale.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-5 py-3 text-slate-700">{money(sale.total_amount)}</td>
+                    <td className="px-5 py-3 text-slate-700">
+                      {money(sale.total_amount, currency)}
+                    </td>
                     <td className="px-5 py-3 capitalize text-slate-600">{sale.payment_status}</td>
                     <td className="px-5 py-3 capitalize text-slate-600">
                       {sale.fulfillment_status.replaceAll('_', ' ')}

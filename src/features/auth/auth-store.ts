@@ -1,7 +1,7 @@
 import { createContext } from 'react';
 
 export type AuthUser = { id: string; name: string; email?: string };
-export type AuthOrganization = { id: string; name: string };
+export type AuthOrganization = { id: string; name: string; currency: string; timezone: string };
 export type AuthRole = 'admin' | 'moderator' | 'rider';
 export type AuthSession = {
   authenticated: true;

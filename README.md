@@ -14,7 +14,7 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run format:check`.
+Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:smoke`, and `npm run format:check`.
 
 ## Documentation
 
@@ -22,6 +22,8 @@ Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run l
 - [Environment](docs/ENVIRONMENT.md)
 - [Development](docs/DEVELOPMENT.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [Vercel production release gate](docs/VERCEL_DEPLOYMENT.md)
+- [Production readiness report](docs/PRODUCTION_READINESS_REPORT.md)
 - [Authentication](docs/AUTHENTICATION.md)
 - [Authorization](docs/AUTHORIZATION.md)
 - [Frontend design system](docs/FRONTEND_DESIGN_SYSTEM.md)
@@ -29,8 +31,15 @@ Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run l
 - [Products and inventory](docs/PRODUCTS_AND_INVENTORY.md)
 - [Customers management](docs/CUSTOMERS_MANAGEMENT.md)
 - [Suppliers and sellers](docs/SUPPLIERS_AND_SELLERS.md)
+- [Sales creation](docs/SALES_CREATION.md)
+- [Sales history](docs/SALES_HISTORY.md)
+- [Packaging and fulfillment](docs/PACKAGING_FULFILLMENT.md)
+- [Returns and refunds](docs/RETURNS_REFUNDS.md)
+- [Communications](docs/COMMUNICATIONS.md)
+- [Settings, user administration, and audit](docs/SETTINGS_ADMIN_AUDIT.md)
+- [Project status](docs/PROJECT_STATUS.md)
 
 ## Foundation endpoints
 
 - `GET /api/health` reports process health and a request ID.
-- `GET /api/ready` reports whether required server configuration is present. It does not claim database connectivity.
+- `GET /api/ready` verifies required server configuration and database connectivity without returning connection details.

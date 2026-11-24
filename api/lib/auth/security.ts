@@ -66,7 +66,7 @@ export async function consumeLoginLimit(
     p_limit: 8,
     p_window_seconds: 900,
   });
-  if (result.error || !result.data?.[0]) return { allowed: true, retryAfter: 0 };
+  if (result.error || !result.data?.[0]) return { allowed: false, retryAfter: 60 };
   return { allowed: result.data[0].allowed, retryAfter: result.data[0].retry_after_seconds };
 }
 

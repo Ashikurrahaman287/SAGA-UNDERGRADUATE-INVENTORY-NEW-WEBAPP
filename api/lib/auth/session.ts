@@ -9,11 +9,15 @@ export type AuthContext = {
   memberships: Array<{
     organizationId: string;
     organizationName: string;
+    currency: string;
+    timezone: string;
     role: 'admin' | 'moderator' | 'rider';
   }>;
   organization?: {
     organizationId: string;
     organizationName: string;
+    currency: string;
+    timezone: string;
     role: 'admin' | 'moderator' | 'rider';
   };
 };
@@ -91,7 +95,7 @@ export async function getAuthContext(
   }
   const { data: rows, error } = await auth.client
     .from('memberships')
-    .select('organization_id, role, organizations(id, name)')
+    .select('organization_id, role, organizations(id, name, currency, timezone)')
     .eq('user_id', user.id)
     .eq('is_active', true);
   if (error) throw error;
@@ -104,6 +108,8 @@ export async function getAuthContext(
           {
             organizationId: row.organization_id,
             organizationName: organization.name,
+            currency: organization.currency,
+            timezone: organization.timezone,
             role: row.role as AuthContext['memberships'][number]['role'],
           },
         ]

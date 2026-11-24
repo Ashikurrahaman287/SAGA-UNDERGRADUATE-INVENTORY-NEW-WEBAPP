@@ -8,13 +8,12 @@ import { Button } from '../../components/ui/button';
 import { apiFetch } from '../../lib/api/client';
 import { useAuth } from '../auth/use-auth';
 import type { Seller } from './supplier-types';
-function money(value: number | string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(
-    Number(value),
-  );
+function money(value: number | string, currency: string): string {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value));
 }
 export function SellerListPage(): ReactElement {
   const auth = useAuth();
+  const currency = auth.session?.organization.currency || 'USD';
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
@@ -119,7 +118,9 @@ export function SellerListPage(): ReactElement {
                   </td>
                   <td className="px-5 py-4 text-slate-500">{seller.reference_code || '—'}</td>
                   <td className="px-5 py-4 text-slate-700">{seller.total_sales || 0}</td>
-                  <td className="px-5 py-4 text-slate-700">{money(seller.sales_value || 0)}</td>
+                  <td className="px-5 py-4 text-slate-700">
+                    {money(seller.sales_value || 0, currency)}
+                  </td>
                   <td className="px-5 py-4">
                     <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
                       Active

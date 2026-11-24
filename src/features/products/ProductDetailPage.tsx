@@ -13,10 +13,8 @@ import type { Category, Product, StockMovement } from './product-types';
 import { ActiveBadge, StockStatusBadge } from './ProductStatusBadge';
 import { ProductForm } from './ProductForm';
 
-function money(value: number | string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(
-    Number(value),
-  );
+function money(value: number | string, currency: string): string {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value));
 }
 function quantity(value: number | string): string {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 }).format(Number(value));
@@ -25,6 +23,7 @@ export function ProductDetailPage(): ReactElement {
   const { id } = useParams();
   const navigate = useNavigate();
   const auth = useAuth();
+  const currency = auth.session?.organization.currency || 'USD';
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -167,8 +166,8 @@ export function ProductDetailPage(): ReactElement {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Info label="Cost price" value={money(product.cost_price)} />
-          <Info label="Selling price" value={money(product.selling_price)} />
+          <Info label="Cost price" value={money(product.cost_price, currency)} />
+          <Info label="Selling price" value={money(product.selling_price, currency)} />
           <Info label="Current stock" value={`${quantity(product.quantity)} ${product.unit}`} />
           <Info label="Low-stock threshold" value={quantity(product.low_stock_threshold)} />
           <div className="flex items-center gap-2">

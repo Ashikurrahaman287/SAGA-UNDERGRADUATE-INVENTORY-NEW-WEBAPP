@@ -12,13 +12,12 @@ import { permissions } from '../../lib/permissions/permission-registry';
 import type { Customer, CustomerListPayload, CustomerMetrics } from './customer-types';
 import { CustomerForm } from './CustomerForm';
 
-function money(value: number | string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(
-    Number(value),
-  );
+function money(value: number | string, currency: string): string {
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value));
 }
 export function CustomerListPage(): ReactElement {
   const auth = useAuth();
+  const currency = auth.session?.organization.currency || 'USD';
   const role = auth.session?.role;
   const [search, setSearch] = useState('');
   const [activity, setActivity] = useState('');
@@ -136,7 +135,7 @@ export function CustomerListPage(): ReactElement {
       ) : query.isError ? (
         <ErrorState onRetry={() => void query.refetch()} />
       ) : customers.length ? (
-        <CustomerTable customers={customers} />
+        <CustomerTable customers={customers} currency={currency} />
       ) : (
         <EmptyState
           title="No customers found"
@@ -184,7 +183,13 @@ function Metric({ label, value }: { label: string; value: number | string }): Re
     </div>
   );
 }
-function CustomerTable({ customers }: { customers: Customer[] }): ReactElement {
+function CustomerTable({
+  customers,
+  currency,
+}: {
+  customers: Customer[];
+  currency: string;
+}): ReactElement {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full min-w-[860px] text-left text-sm">
@@ -213,7 +218,9 @@ function CustomerTable({ customers }: { customers: Customer[] }): ReactElement {
               <td className="px-5 py-4 text-slate-600">{customer.phone}</td>
               <td className="px-5 py-4 text-slate-600">{customer.email || '—'}</td>
               <td className="px-5 py-4 text-slate-700">{customer.total_orders || 0}</td>
-              <td className="px-5 py-4 text-slate-700">{money(customer.total_purchase || 0)}</td>
+              <td className="px-5 py-4 text-slate-700">
+                {money(customer.total_purchase || 0, currency)}
+              </td>
               <td className="px-5 py-4 text-slate-500">
                 {customer.last_purchase
                   ? new Date(customer.last_purchase).toLocaleDateString()

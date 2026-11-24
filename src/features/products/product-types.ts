@@ -19,6 +19,7 @@ export type Product = {
 };
 export type ProductListResponse = {
   data: { items: Product[]; total: number };
+  defaultLowStockThreshold?: number;
   page: number;
   pageSize: number;
   requestId: string;
