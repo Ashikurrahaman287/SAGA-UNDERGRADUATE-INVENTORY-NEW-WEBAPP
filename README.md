@@ -1,4 +1,4 @@
-# SAGA Inventory Management System
+# SAGA Inventory Management System v2
 
 SAGA is a production-oriented inventory and business operations platform for Admin, Moderator, and Rider workflows. Task 01 establishes the application foundation only; business modules, database tables, authentication policies, and RLS are intentionally deferred to later tasks.
 
