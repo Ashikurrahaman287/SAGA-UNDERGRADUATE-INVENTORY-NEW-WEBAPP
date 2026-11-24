@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { getServerEnv } from './env';
+import { getServerEnv } from './env.js';
 
 export function getSupabaseServerClient(): SupabaseClient {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = getServerEnv();

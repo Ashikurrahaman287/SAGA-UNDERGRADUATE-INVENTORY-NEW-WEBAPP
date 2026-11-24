@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { sendAuthFailure, methodNotAllowed } from '../lib/auth/http';
-import { requirePermission } from '../lib/auth/authorization-context';
-import { permissions } from '../../src/lib/permissions/permission-registry';
-import { buildDashboardDateRange } from '../lib/dashboard/date-range';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { sendAuthFailure, methodNotAllowed } from '../lib/auth/http.js';
+import { requirePermission } from '../lib/auth/authorization-context.js';
+import { permissions } from '../../src/lib/permissions/permission-registry.js';
+import { buildDashboardDateRange } from '../lib/dashboard/date-range.js';
 
 const querySchema = z.object({ from: z.string().optional(), to: z.string().optional() });
 

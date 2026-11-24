@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRequestId } from '../../lib/request-id';
-import { sendJson } from '../../lib/response';
-import { sendAuthFailure, methodNotAllowed } from '../../lib/auth/http';
-import { requirePermission } from '../../lib/auth/authorization-context';
-import { permissions } from '../../../src/lib/permissions/permission-registry';
-import { getSwiftSmsBalance } from '../../_lib/swiftsms';
+import { getRequestId } from '../../lib/request-id.js';
+import { sendJson } from '../../lib/response.js';
+import { sendAuthFailure, methodNotAllowed } from '../../lib/auth/http.js';
+import { requirePermission } from '../../lib/auth/authorization-context.js';
+import { permissions } from '../../../src/lib/permissions/permission-registry.js';
+import { getSwiftSmsBalance } from '../../_lib/swiftsms.js';
 
 export default async function smsBalance(
   request: VercelRequest,

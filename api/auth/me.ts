@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { getAuthContext } from '../lib/auth/session';
-import { sendAuthFailure, methodNotAllowed } from '../lib/auth/http';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { getAuthContext } from '../lib/auth/session.js';
+import { sendAuthFailure, methodNotAllowed } from '../lib/auth/http.js';
 
 export default async function me(request: VercelRequest, response: VercelResponse): Promise<void> {
   if (methodNotAllowed(request, response, 'GET')) return;

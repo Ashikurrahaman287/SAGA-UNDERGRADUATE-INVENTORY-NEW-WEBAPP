@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../request-id';
-import { sendError, sendJson } from '../response';
-import { SecurityError } from './security';
+import { getRequestId } from '../request-id.js';
+import { sendError, sendJson } from '../response.js';
+import { SecurityError } from './security.js';
 
 export async function readJson(request: VercelRequest): Promise<unknown> {
   if (!request.body) return {};

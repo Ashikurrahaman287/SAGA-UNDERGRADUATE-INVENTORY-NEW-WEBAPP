@@ -2,7 +2,7 @@
 
 ## Build and routing
 
-Deploy from the repository root with the Vite preset, `npm run build`, and `dist` output. `vercel.json` applies the SPA fallback only to non-`/api` paths; Vercel functions own `/api/*`. Verify direct refresh on `/app/dashboard`, `/app/communications`, `/app/settings`, `/app/users`, and `/app/audit-logs`.
+Deploy from the repository root with the Vite preset, `npm run build`, and `dist` output. Before release, run `npm run typecheck:api` to reproduce the NodeNext server-module check used by Vercel. `vercel.json` applies the SPA fallback only to non-`/api` paths; Vercel functions own `/api/*`. Verify direct refresh on `/app/dashboard`, `/app/communications`, `/app/settings`, `/app/users`, and `/app/audit-logs`.
 
 `GET /api/health` is liveness and must return HTTP 200 JSON. `GET /api/ready` checks required server configuration and a Supabase query; it returns a generic `503` when either dependency is unavailable and never includes connection details.
 

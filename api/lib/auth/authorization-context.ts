@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRequestId } from '../request-id';
-import { sendError } from '../response';
-import { getAuthContext, type AuthContext } from './session';
-import { recordAuthEvent } from './audit';
-import { AuthorizationError } from './authorization-errors';
-import { hasPermission, type Permission } from '../../../src/lib/permissions/permission-utils';
+import { getRequestId } from '../request-id.js';
+import { sendError } from '../response.js';
+import { getAuthContext, type AuthContext } from './session.js';
+import { recordAuthEvent } from './audit.js';
+import { AuthorizationError } from './authorization-errors.js';
+import { hasPermission, type Permission } from '../../../src/lib/permissions/permission-utils.js';
 
 export type VerifiedAuthorizationContext = {
   auth: AuthContext;

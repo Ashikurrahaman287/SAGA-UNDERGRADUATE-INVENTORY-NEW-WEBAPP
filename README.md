@@ -14,7 +14,7 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:smoke`, and `npm run format:check`.
+Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run typecheck`, `npm run typecheck:api`, `npm run test`, `npm run test:smoke`, and `npm run format:check`.
 
 ## Documentation
 

@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../lib/request-id';
-import { sendError, sendJson } from '../lib/response';
-import { getSupabaseServerClient } from '../lib/supabase';
-import { requirePermission } from '../lib/auth/authorization-context';
-import { methodNotAllowed, sendAuthFailure } from '../lib/auth/http';
-import { permissions } from '../../src/lib/permissions/permission-registry';
-import { zonedMidnightUtc } from '../lib/dashboard/date-range';
-import { sanitizeAuditValue } from '../../src/features/settings/audit-safety';
+import { getRequestId } from '../lib/request-id.js';
+import { sendError, sendJson } from '../lib/response.js';
+import { getSupabaseServerClient } from '../lib/supabase.js';
+import { requirePermission } from '../lib/auth/authorization-context.js';
+import { methodNotAllowed, sendAuthFailure } from '../lib/auth/http.js';
+import { permissions } from '../../src/lib/permissions/permission-registry.js';
+import { zonedMidnightUtc } from '../lib/dashboard/date-range.js';
+import { sanitizeAuditValue } from '../../src/features/settings/audit-safety.js';
 
 const categories = [
   'auth',

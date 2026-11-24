@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { getServerEnv } from '../lib/env';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { recordAuthEvent } from '../lib/auth/audit';
-import { methodNotAllowed, readJson, sendAuthFailure } from '../lib/auth/http';
-import { requireCsrf, requireSameOrigin } from '../lib/auth/security';
+import { getServerEnv } from '../lib/env.js';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { recordAuthEvent } from '../lib/auth/audit.js';
+import { methodNotAllowed, readJson, sendAuthFailure } from '../lib/auth/http.js';
+import { requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
 
 const schema = z.object({
   email: z

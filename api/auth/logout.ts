@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { recordAuthEvent } from '../lib/auth/audit';
-import { methodNotAllowed, sendAuthFailure } from '../lib/auth/http';
-import { clearAuthCookies, getAuthContext } from '../lib/auth/session';
-import { requireCsrf, requireSameOrigin } from '../lib/auth/security';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { recordAuthEvent } from '../lib/auth/audit.js';
+import { methodNotAllowed, sendAuthFailure } from '../lib/auth/http.js';
+import { clearAuthCookies, getAuthContext } from '../lib/auth/session.js';
+import { requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
 
 export default async function logout(
   request: VercelRequest,

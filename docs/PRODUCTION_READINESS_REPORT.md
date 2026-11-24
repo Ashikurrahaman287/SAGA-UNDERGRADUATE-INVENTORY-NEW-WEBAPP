@@ -40,6 +40,7 @@ Build and scan results: `npm run build` passed. The initial entry JS is 433.76 K
 
 - `npm run lint`: passed.
 - `npm run typecheck`: passed.
+- `npm run typecheck:api`: passed under NodeNext module resolution.
 - `npm test`: 16 files, 45 tests passed.
 - `npm run build`: passed; 433.76 KB initial JS, upstream Zod warnings only.
 - `npm audit --omit=dev`: 0 vulnerabilities.

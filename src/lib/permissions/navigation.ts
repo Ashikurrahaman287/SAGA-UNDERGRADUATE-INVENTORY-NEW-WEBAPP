@@ -17,9 +17,9 @@ import {
   Warehouse,
   type LucideIcon,
 } from 'lucide-react';
-import type { AuthRole } from '../../features/auth/auth-store';
-import { permissions, type Permission } from './permission-registry';
-import { hasPermission } from './permission-utils';
+import type { AuthRole } from '../../features/auth/auth-store.js';
+import { permissions, type Permission } from './permission-registry.js';
+import { hasPermission } from './permission-utils.js';
 
 export type NavigationItem = {
   label: string;

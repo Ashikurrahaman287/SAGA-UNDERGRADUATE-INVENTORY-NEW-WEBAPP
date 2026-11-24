@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../../lib/request-id';
-import { sendJson } from '../../lib/response';
-import { getSupabaseServerClient } from '../../lib/supabase';
-import { recordAuthEvent } from '../../lib/auth/audit';
-import { methodNotAllowed, readJson, sendAuthFailure } from '../../lib/auth/http';
-import { requirePermission } from '../../lib/auth/authorization-context';
-import { permissions } from '../../../src/lib/permissions/permission-registry';
-import { requireCsrf, requireSameOrigin } from '../../lib/auth/security';
+import { getRequestId } from '../../lib/request-id.js';
+import { sendJson } from '../../lib/response.js';
+import { getSupabaseServerClient } from '../../lib/supabase.js';
+import { recordAuthEvent } from '../../lib/auth/audit.js';
+import { methodNotAllowed, readJson, sendAuthFailure } from '../../lib/auth/http.js';
+import { requirePermission } from '../../lib/auth/authorization-context.js';
+import { permissions } from '../../../src/lib/permissions/permission-registry.js';
+import { requireCsrf, requireSameOrigin } from '../../lib/auth/security.js';
 
 const schema = z
   .object({

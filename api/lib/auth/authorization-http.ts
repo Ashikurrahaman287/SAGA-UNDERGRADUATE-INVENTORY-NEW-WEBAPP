@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendAuthFailure } from './http';
-import { requirePermission } from './authorization-context';
-import type { Permission } from '../../../src/lib/permissions/permission-registry';
+import { sendAuthFailure } from './http.js';
+import { requirePermission } from './authorization-context.js';
+import type { Permission } from '../../../src/lib/permissions/permission-registry.js';
 
 export async function withPermission(
   request: VercelRequest,

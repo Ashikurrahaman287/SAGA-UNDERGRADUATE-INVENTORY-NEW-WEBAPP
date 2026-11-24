@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { sendAuthFailure, methodNotAllowed } from '../lib/auth/http';
-import { requirePermission } from '../lib/auth/authorization-context';
-import { permissions } from '../../src/lib/permissions/permission-registry';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { sendAuthFailure, methodNotAllowed } from '../lib/auth/http.js';
+import { requirePermission } from '../lib/auth/authorization-context.js';
+import { permissions } from '../../src/lib/permissions/permission-registry.js';
 
 function queryValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -58,7 +58,7 @@ export default async function salesSummary(
       .maybeSingle();
     if (organization.error) throw organization.error;
     const timezone = organization.data?.timezone || 'UTC';
-    const { buildDashboardDateRange } = await import('../lib/dashboard/date-range');
+    const { buildDashboardDateRange } = await import('../lib/dashboard/date-range.js');
     const range =
       input.from || input.to
         ? buildDashboardDateRange(input.from, input.to, timezone)

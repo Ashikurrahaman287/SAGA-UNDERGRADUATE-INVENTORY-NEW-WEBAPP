@@ -1,14 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../../lib/request-id';
-import { sendJson } from '../../lib/response';
-import { getServerEnv } from '../../lib/env';
-import { getSupabaseServerClient } from '../../lib/supabase';
-import { requirePermission } from '../../lib/auth/authorization-context';
-import { methodNotAllowed, readJson, sendAuthFailure } from '../../lib/auth/http';
-import { requireCsrf, requireSameOrigin } from '../../lib/auth/security';
-import { permissions } from '../../../src/lib/permissions/permission-registry';
-import { memberInviteSchema } from '../../../src/features/settings/member-validation';
+import { getRequestId } from '../../lib/request-id.js';
+import { sendJson } from '../../lib/response.js';
+import { getServerEnv } from '../../lib/env.js';
+import { getSupabaseServerClient } from '../../lib/supabase.js';
+import { requirePermission } from '../../lib/auth/authorization-context.js';
+import { methodNotAllowed, readJson, sendAuthFailure } from '../../lib/auth/http.js';
+import { requireCsrf, requireSameOrigin } from '../../lib/auth/security.js';
+import { permissions } from '../../../src/lib/permissions/permission-registry.js';
+import { memberInviteSchema } from '../../../src/features/settings/member-validation.js';
 
 function queryValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;

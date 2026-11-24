@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { stringifySetCookie } from 'cookie';
-import { getSupabaseServerClient } from '../supabase';
+import { getSupabaseServerClient } from '../supabase.js';
 
 const csrfCookie = 'saga_csrf';
 const isProduction = process.env.NODE_ENV === 'production';

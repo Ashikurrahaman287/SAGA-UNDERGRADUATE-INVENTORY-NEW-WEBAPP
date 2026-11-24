@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "verbatimModuleSyntax": true,
+    "types": ["node", "@vercel/node"]
+  },
+  "include": [
+    "api/**/*.ts",
+    "src/lib/permissions/**/*.ts",
+    "src/features/auth/auth-store.ts",
+    "src/features/settings/audit-safety.ts",
+    "src/features/settings/member-validation.ts",
+    "src/features/settings/settings-validation.ts"
+  ]
+}

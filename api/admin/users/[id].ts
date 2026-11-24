@@ -1,16 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../../lib/request-id';
-import { sendError, sendJson } from '../../lib/response';
-import { getSupabaseServerClient } from '../../lib/supabase';
-import { requirePermission } from '../../lib/auth/authorization-context';
-import { methodNotAllowed, readJson, sendAuthFailure } from '../../lib/auth/http';
-import { requireCsrf, requireSameOrigin } from '../../lib/auth/security';
-import { permissions } from '../../../src/lib/permissions/permission-registry';
+import { getRequestId } from '../../lib/request-id.js';
+import { sendError, sendJson } from '../../lib/response.js';
+import { getSupabaseServerClient } from '../../lib/supabase.js';
+import { requirePermission } from '../../lib/auth/authorization-context.js';
+import { methodNotAllowed, readJson, sendAuthFailure } from '../../lib/auth/http.js';
+import { requireCsrf, requireSameOrigin } from '../../lib/auth/security.js';
+import { permissions } from '../../../src/lib/permissions/permission-registry.js';
 import {
   membershipChangeIssue,
   type OperationalRole,
-} from '../../../src/features/settings/member-validation';
+} from '../../../src/features/settings/member-validation.js';
 
 const schema = z
   .object({

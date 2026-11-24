@@ -1,5 +1,5 @@
 import type { VercelResponse } from '@vercel/node';
-import { sendError } from './response';
+import { sendError } from './response.js';
 
 export function handleApiError(response: VercelResponse, error: unknown, requestId: string): void {
   const message = error instanceof Error ? error.message : 'An unexpected server error occurred.';

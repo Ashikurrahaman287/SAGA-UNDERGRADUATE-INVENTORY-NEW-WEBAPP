@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createServerClient } from '@supabase/ssr';
 import { stringifySetCookie } from 'cookie';
-import { getServerEnv } from '../env';
-import { getCookie } from './security';
+import { getServerEnv } from '../env.js';
+import { getCookie } from './security.js';
 
 export type AuthContext = {
   user: { id: string; email?: string; name: string };

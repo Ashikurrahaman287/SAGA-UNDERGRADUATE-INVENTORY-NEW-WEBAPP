@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from './lib/request-id';
-import { sendError, sendJson } from './lib/response';
-import { getSupabaseServerClient } from './lib/supabase';
-import { requirePermission } from './lib/auth/authorization-context';
-import { readJson, sendAuthFailure } from './lib/auth/http';
-import { requireCsrf, requireSameOrigin } from './lib/auth/security';
-import { permissions } from '../src/lib/permissions/permission-registry';
-import { organizationSettingsSchema } from '../src/features/settings/settings-validation';
+import { getRequestId } from './lib/request-id.js';
+import { sendError, sendJson } from './lib/response.js';
+import { getSupabaseServerClient } from './lib/supabase.js';
+import { requirePermission } from './lib/auth/authorization-context.js';
+import { readJson, sendAuthFailure } from './lib/auth/http.js';
+import { requireCsrf, requireSameOrigin } from './lib/auth/security.js';
+import { permissions } from '../src/lib/permissions/permission-registry.js';
+import { organizationSettingsSchema } from '../src/features/settings/settings-validation.js';
 
 const updateSchema = organizationSettingsSchema.extend({
   lowStockThreshold: z.number().int().min(0).max(100000000),

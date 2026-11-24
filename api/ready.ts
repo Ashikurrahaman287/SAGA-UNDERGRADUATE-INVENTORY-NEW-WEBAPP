@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isServerConfigurationReady } from './lib/env';
-import { getRequestId } from './lib/request-id';
-import { sendJson } from './lib/response';
-import { getSupabaseServerClient } from './lib/supabase';
+import { isServerConfigurationReady } from './lib/env.js';
+import { getRequestId } from './lib/request-id.js';
+import { sendJson } from './lib/response.js';
+import { getSupabaseServerClient } from './lib/supabase.js';
 
 export default async function ready(
   request: VercelRequest,

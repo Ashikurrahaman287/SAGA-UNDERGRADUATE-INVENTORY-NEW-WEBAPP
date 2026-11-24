@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from '../supabase';
+import { getSupabaseServerClient } from '../supabase.js';
 
 export async function recordAuthEvent(input: {
   action: string;

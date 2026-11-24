@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { readJson, sendAuthFailure, methodNotAllowed } from '../lib/auth/http';
-import { requirePermission } from '../lib/auth/authorization-context';
-import { permissions } from '../../src/lib/permissions/permission-registry';
-import { getSupabaseServerClient } from '../lib/supabase';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { readJson, sendAuthFailure, methodNotAllowed } from '../lib/auth/http.js';
+import { requirePermission } from '../lib/auth/authorization-context.js';
+import { permissions } from '../../src/lib/permissions/permission-registry.js';
+import { getSupabaseServerClient } from '../lib/supabase.js';
 
 const listSchema = z.object({
   search: z.string().trim().max(100).optional(),

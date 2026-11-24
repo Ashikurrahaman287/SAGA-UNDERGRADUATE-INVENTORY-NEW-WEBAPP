@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { readJson, sendAuthFailure, methodNotAllowed } from '../lib/auth/http';
-import { requirePermission } from '../lib/auth/authorization-context';
-import { requireCsrf, requireSameOrigin } from '../lib/auth/security';
-import { permissions } from '../../src/lib/permissions/permission-registry';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { readJson, sendAuthFailure, methodNotAllowed } from '../lib/auth/http.js';
+import { requirePermission } from '../lib/auth/authorization-context.js';
+import { requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
+import { permissions } from '../../src/lib/permissions/permission-registry.js';
 
 const itemSchema = z
   .object({ productId: z.string().uuid(), quantity: z.number().int().positive() })
@@ -116,7 +116,7 @@ export default async function sales(
         .maybeSingle();
       if (organization.error) throw organization.error;
       const timezone = organization.data?.timezone || 'UTC';
-      const { buildDashboardDateRange } = await import('../lib/dashboard/date-range');
+      const { buildDashboardDateRange } = await import('../lib/dashboard/date-range.js');
       const range =
         input.from || input.to
           ? buildDashboardDateRange(input.from, input.to, timezone)

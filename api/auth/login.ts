@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { stringifySetCookie } from 'cookie';
 import { z } from 'zod';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { recordAuthEvent } from '../lib/auth/audit';
-import { readJson, methodNotAllowed, sendAuthFailure, jsonSuccess } from '../lib/auth/http';
-import { createAuthClient, clearAuthCookies } from '../lib/auth/session';
-import { consumeLoginLimit, requireCsrf, requireSameOrigin } from '../lib/auth/security';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { recordAuthEvent } from '../lib/auth/audit.js';
+import { readJson, methodNotAllowed, sendAuthFailure, jsonSuccess } from '../lib/auth/http.js';
+import { createAuthClient, clearAuthCookies } from '../lib/auth/session.js';
+import { consumeLoginLimit, requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
 
 const inputSchema = z.object({
   email: z

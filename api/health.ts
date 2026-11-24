@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRequestId } from './lib/request-id';
-import { sendJson } from './lib/response';
+import { getRequestId } from './lib/request-id.js';
+import { sendJson } from './lib/response.js';
 
 export default function health(request: VercelRequest, response: VercelResponse): void {
   const requestId = getRequestId(request);

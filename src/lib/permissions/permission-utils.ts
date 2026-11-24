@@ -1,5 +1,5 @@
-import type { AuthRole } from '../../features/auth/auth-store';
-import { rolePermissions, type Permission } from './permission-registry';
+import type { AuthRole } from '../../features/auth/auth-store.js';
+import { rolePermissions, type Permission } from './permission-registry.js';
 
 export type { Permission };
 

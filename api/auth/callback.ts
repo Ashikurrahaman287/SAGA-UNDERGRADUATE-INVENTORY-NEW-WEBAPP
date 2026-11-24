@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createAuthClient } from '../lib/auth/session';
+import { createAuthClient } from '../lib/auth/session.js';
 
 export default async function callback(
   request: VercelRequest,

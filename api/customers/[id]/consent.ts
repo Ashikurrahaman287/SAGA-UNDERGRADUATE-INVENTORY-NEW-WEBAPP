@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../../lib/request-id';
-import { sendJson } from '../../lib/response';
-import { readJson, sendAuthFailure, methodNotAllowed } from '../../lib/auth/http';
-import { requirePermission } from '../../lib/auth/authorization-context';
-import { permissions } from '../../../src/lib/permissions/permission-registry';
+import { getRequestId } from '../../lib/request-id.js';
+import { sendJson } from '../../lib/response.js';
+import { readJson, sendAuthFailure, methodNotAllowed } from '../../lib/auth/http.js';
+import { requirePermission } from '../../lib/auth/authorization-context.js';
+import { permissions } from '../../../src/lib/permissions/permission-registry.js';
 const schema = z
   .object({
     channel: z.enum(['sms', 'email']),

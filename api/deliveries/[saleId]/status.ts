@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { getRequestId } from '../../lib/request-id';
-import { sendJson } from '../../lib/response';
-import { readJson, sendAuthFailure, methodNotAllowed } from '../../lib/auth/http';
-import { requirePermission } from '../../lib/auth/authorization-context';
-import { requireCsrf, requireSameOrigin } from '../../lib/auth/security';
-import { permissions } from '../../../src/lib/permissions/permission-registry';
-import { hasPermission } from '../../../src/lib/permissions/permission-utils';
+import { getRequestId } from '../../lib/request-id.js';
+import { sendJson } from '../../lib/response.js';
+import { readJson, sendAuthFailure, methodNotAllowed } from '../../lib/auth/http.js';
+import { requirePermission } from '../../lib/auth/authorization-context.js';
+import { requireCsrf, requireSameOrigin } from '../../lib/auth/security.js';
+import { permissions } from '../../../src/lib/permissions/permission-registry.js';
+import { hasPermission } from '../../../src/lib/permissions/permission-utils.js';
 const schema = z
   .object({
     status: z.enum(['out_for_delivery', 'delivered', 'failed', 'cancelled']),

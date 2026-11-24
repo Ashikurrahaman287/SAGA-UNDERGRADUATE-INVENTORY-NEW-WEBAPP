@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { getRequestId } from '../lib/request-id';
-import { sendJson } from '../lib/response';
-import { recordAuthEvent } from '../lib/auth/audit';
-import { methodNotAllowed, readJson, sendAuthFailure } from '../lib/auth/http';
-import { getAuthContext } from '../lib/auth/session';
-import { requireCsrf, requireSameOrigin } from '../lib/auth/security';
+import { getRequestId } from '../lib/request-id.js';
+import { sendJson } from '../lib/response.js';
+import { recordAuthEvent } from '../lib/auth/audit.js';
+import { methodNotAllowed, readJson, sendAuthFailure } from '../lib/auth/http.js';
+import { getAuthContext } from '../lib/auth/session.js';
+import { requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
 
 const schema = z.object({
   password: z.string().min(12).regex(/[a-z]/).regex(/[A-Z]/).regex(/[0-9]/),
