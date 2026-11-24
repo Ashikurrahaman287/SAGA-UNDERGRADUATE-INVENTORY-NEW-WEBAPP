@@ -86,7 +86,7 @@ begin
     from public.sales s
     where s.organization_id = p_organization_id and s.id = existing_sale;
     return sale_result;
-  end;
+  end if;
 
   if p_customer_id is not null and not exists (
     select 1 from public.customers c
@@ -100,7 +100,7 @@ begin
 
   if p_delivery_address_snapshot is not null and length(trim(coalesce(p_delivery_address_snapshot->>'address_line', ''))) = 0 then
     raise exception 'Delivery address snapshot is invalid';
-  end;
+  end if;
 
   for item in select * from jsonb_array_elements(p_items)
   loop
@@ -114,7 +114,7 @@ begin
     where p.organization_id = p_organization_id and p.id = (item->>'product_id')::uuid
     for update;
 
-    if not found then raise exception 'Product not found'; end;
+    if not found then raise exception 'Product not found'; end if;
     if not product_row.is_active then raise exception 'Inactive product cannot be sold'; end if;
     if product_row.quantity < line_quantity then raise exception 'Insufficient stock'; end if;
 

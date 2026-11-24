@@ -92,7 +92,7 @@ begin
     into existing_result from public.returns r
     where r.organization_id = p_organization_id and r.id = existing_return_id;
     return existing_result;
-  end;
+  end if;
 
   select * into sale_row from public.sales s
   where s.organization_id = p_organization_id and s.id = p_sale_id for update;

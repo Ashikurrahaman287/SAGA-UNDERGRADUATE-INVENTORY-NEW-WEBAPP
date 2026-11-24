@@ -37,32 +37,32 @@ declare
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_organization_id::text || ':packaging:' || p_sale_id::text || ':' || p_idempotency_key, 0));
   perform set_config('saga.fulfillment_transaction', 'true', true);
-  if not public.is_staff(p_organization_id) then raise exception 'Fulfillment access denied'; end;
-  if p_idempotency_key is null or length(trim(p_idempotency_key)) < 8 then raise exception 'A valid idempotency key is required'; end;
+  if not public.is_staff(p_organization_id) then raise exception 'Fulfillment access denied'; end if;
+  if p_idempotency_key is null or length(trim(p_idempotency_key)) < 8 then raise exception 'A valid idempotency key is required'; end if;
 
   select * into existing_request from public.fulfillment_requests f
   where f.organization_id = p_organization_id and f.operation = 'packaging_transition' and f.idempotency_key = p_idempotency_key;
   if found then
-    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end;
+    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end if;
     return existing_request.response_data;
-  end;
+  end if;
 
   select * into sale_row from public.sales s where s.organization_id = p_organization_id and s.id = p_sale_id for update;
-  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end;
+  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end if;
   select * into packaging_row from public.packaging_records r where r.organization_id = p_organization_id and r.sale_id = p_sale_id for update;
   if not found then
     insert into public.packaging_records (organization_id, sale_id, packaging_status, packaging_cost)
     values (p_organization_id, p_sale_id, 'pending', 0)
     returning * into packaging_row;
-  end;
+  end if;
 
   if not (
     (packaging_row.packaging_status = 'pending' and p_new_status in ('in_progress','packed'))
     or (packaging_row.packaging_status = 'in_progress' and p_new_status in ('packed','pending'))
     or (packaging_row.packaging_status = 'packed' and p_new_status = 'ready')
-  ) then raise exception 'Invalid packaging transition'; end;
+  ) then raise exception 'Invalid packaging transition'; end if;
 
-  if coalesce(p_packaging_cost, 0) < 0 then raise exception 'Packaging cost cannot be negative'; end;
+  if coalesce(p_packaging_cost, 0) < 0 then raise exception 'Packaging cost cannot be negative'; end if;
 
   insert into public.packaging_events (organization_id, packaging_record_id, previous_status, new_status, actor_user_id)
   values (p_organization_id, packaging_row.id, packaging_row.packaging_status, p_new_status, auth.uid());
@@ -116,21 +116,21 @@ declare
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_organization_id::text || ':assign:' || p_sale_id::text || ':' || p_idempotency_key, 0));
   perform set_config('saga.fulfillment_transaction', 'true', true);
-  if not public.is_staff(p_organization_id) then raise exception 'Delivery assignment access denied'; end;
-  if p_idempotency_key is null or length(trim(p_idempotency_key)) < 8 then raise exception 'A valid idempotency key is required'; end;
+  if not public.is_staff(p_organization_id) then raise exception 'Delivery assignment access denied'; end if;
+  if p_idempotency_key is null or length(trim(p_idempotency_key)) < 8 then raise exception 'A valid idempotency key is required'; end if;
 
   select * into existing_request from public.fulfillment_requests f
   where f.organization_id = p_organization_id and f.operation = 'delivery_assign' and f.idempotency_key = p_idempotency_key;
   if found then
-    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end;
+    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end if;
     return existing_request.response_data;
-  end;
+  end if;
 
   select * into sale_row from public.sales s where s.organization_id = p_organization_id and s.id = p_sale_id for update;
-  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end;
+  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end if;
   if not exists (select 1 from public.memberships m where m.organization_id = p_organization_id and m.user_id = p_rider_user_id and m.role = 'rider' and m.is_active) then
     raise exception 'Rider is inactive or outside the organization';
-  end;
+  end if;
 
   select * into assignment from public.delivery_assignments d where d.organization_id = p_organization_id and d.sale_id = p_sale_id for update;
   if found then
@@ -142,7 +142,7 @@ begin
     insert into public.delivery_assignments (organization_id, sale_id, rider_user_id, assigned_by, status, scheduled_at, assigned_at)
     values (p_organization_id, p_sale_id, p_rider_user_id, auth.uid(), 'assigned', p_scheduled_at, now())
     returning * into assignment;
-  end;
+  end if;
 
   insert into public.delivery_events (organization_id, delivery_assignment_id, actor_user_id, previous_status, new_status, notes)
   values (p_organization_id, assignment.id, auth.uid(), previous_status, 'assigned', 'Rider assignment updated');
@@ -177,24 +177,24 @@ declare
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_organization_id::text || ':delivery:' || p_sale_id::text || ':' || p_idempotency_key, 0));
   perform set_config('saga.fulfillment_transaction', 'true', true);
-  if not (public.is_staff(p_organization_id) or public.is_rider(p_organization_id)) then raise exception 'Delivery access denied'; end;
+  if not (public.is_staff(p_organization_id) or public.is_rider(p_organization_id)) then raise exception 'Delivery access denied'; end if;
   select * into existing_request from public.fulfillment_requests f
   where f.organization_id = p_organization_id and f.operation = 'delivery_status' and f.idempotency_key = p_idempotency_key;
   if found then
-    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end;
+    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end if;
     return existing_request.response_data;
-  end;
+  end if;
   select * into sale_row from public.sales s where s.organization_id = p_organization_id and s.id = p_sale_id for update;
-  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end;
+  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end if;
   select * into assignment from public.delivery_assignments d where d.organization_id = p_organization_id and d.sale_id = p_sale_id for update;
-  if not found or assignment.rider_user_id is null then raise exception 'Delivery is not assigned'; end;
-  if public.is_rider(p_organization_id) and assignment.rider_user_id <> auth.uid() then raise exception 'Delivery access denied'; end;
+  if not found or assignment.rider_user_id is null then raise exception 'Delivery is not assigned'; end if;
+  if public.is_rider(p_organization_id) and assignment.rider_user_id <> auth.uid() then raise exception 'Delivery access denied'; end if;
 
   if not (
     (assignment.status = 'assigned' and p_new_status in ('out_for_delivery','failed','cancelled'))
     or (assignment.status = 'out_for_delivery' and p_new_status in ('delivered','failed'))
-  ) then raise exception 'Invalid delivery transition'; end;
-  if p_new_status = 'cancelled' and not public.is_staff(p_organization_id) then raise exception 'Only staff may cancel delivery'; end;
+  ) then raise exception 'Invalid delivery transition'; end if;
+  if p_new_status = 'cancelled' and not public.is_staff(p_organization_id) then raise exception 'Only staff may cancel delivery'; end if;
 
   insert into public.delivery_events (organization_id, delivery_assignment_id, actor_user_id, previous_status, new_status, notes)
   values (p_organization_id, assignment.id, auth.uid(), assignment.status, p_new_status, nullif(trim(coalesce(p_notes, '')), ''));
@@ -237,25 +237,25 @@ declare
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_organization_id::text || ':collect:' || p_sale_id::text || ':' || p_idempotency_key, 0));
   perform set_config('saga.fulfillment_transaction', 'true', true);
-  if not (public.is_staff(p_organization_id) or public.is_rider(p_organization_id)) then raise exception 'Payment collection denied'; end;
-  if coalesce(p_amount, 0) <= 0 then raise exception 'Collected amount must be positive'; end;
+  if not (public.is_staff(p_organization_id) or public.is_rider(p_organization_id)) then raise exception 'Payment collection denied'; end if;
+  if coalesce(p_amount, 0) <= 0 then raise exception 'Collected amount must be positive'; end if;
   select * into existing_request from public.fulfillment_requests f
   where f.organization_id = p_organization_id and f.operation = 'payment_collect' and f.idempotency_key = p_idempotency_key;
   if found then
-    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end;
+    if existing_request.request_hash <> p_request_hash then raise exception 'Idempotency key was used with different data'; end if;
     return existing_request.response_data;
-  end;
+  end if;
   select * into assignment from public.delivery_assignments d where d.organization_id = p_organization_id and d.sale_id = p_sale_id for update;
-  if not found or assignment.rider_user_id is null then raise exception 'Delivery is not assigned'; end;
-  if public.is_rider(p_organization_id) and assignment.rider_user_id <> auth.uid() then raise exception 'Payment collection denied'; end;
+  if not found or assignment.rider_user_id is null then raise exception 'Delivery is not assigned'; end if;
+  if public.is_rider(p_organization_id) and assignment.rider_user_id <> auth.uid() then raise exception 'Payment collection denied'; end if;
   select * into sale_row from public.sales s where s.organization_id = p_organization_id and s.id = p_sale_id for update;
-  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end;
+  if not found or sale_row.fulfillment_status = 'cancelled' then raise exception 'Sale unavailable'; end if;
 
   select coalesce(sum(p.amount), 0) into confirmed_total
   from public.payments p
   where p.organization_id = p_organization_id and p.sale_id = p_sale_id and p.status = 'completed';
   next_paid := confirmed_total + round(p_amount, 2);
-  if next_paid > sale_row.total_amount then raise exception 'Payment cannot exceed the sale total'; end;
+  if next_paid > sale_row.total_amount then raise exception 'Payment cannot exceed the sale total'; end if;
   next_due := round(sale_row.total_amount - next_paid, 2);
 
   insert into public.payments (organization_id, sale_id, amount, payment_method, payment_reference, collected_by, collected_at, status, idempotency_key, notes)
@@ -290,6 +290,7 @@ create policy fulfillment_requests_rpc_insert on public.fulfillment_requests for
 with check (public.is_staff(organization_id) and coalesce(current_setting('saga.fulfillment_transaction', true), 'false') = 'true');
 
 drop policy if exists packaging_staff_access on public.packaging_records;
+drop policy if exists packaging_staff_read on public.packaging_records;
 create policy packaging_staff_read on public.packaging_records for select to authenticated
 using (public.is_staff(organization_id));
 create policy packaging_rpc_update on public.packaging_records for update to authenticated
