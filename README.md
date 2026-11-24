@@ -38,6 +38,7 @@ Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run l
 - [Communications](docs/COMMUNICATIONS.md)
 - [Settings, user administration, and audit](docs/SETTINGS_ADMIN_AUDIT.md)
 - [Project status](docs/PROJECT_STATUS.md)
+- [Local Supabase and frontend setup](LOCAL_SETUP.md)
 
 ## Foundation endpoints
 
