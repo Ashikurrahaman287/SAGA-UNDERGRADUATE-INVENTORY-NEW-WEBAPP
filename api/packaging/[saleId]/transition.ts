@@ -28,6 +28,27 @@ export default async function transition(
     if (!context) return;
     const saleId = z.string().uuid().parse(request.query.saleId);
     const input = schema.parse(await readJson(request));
+    const saleState = await context.client
+      .from('sales')
+      .select('fulfillment_status')
+      .eq('organization_id', context.organization.id)
+      .eq('id', saleId)
+      .maybeSingle();
+    if (!saleState.error && saleState.data?.fulfillment_status === 'delivered') {
+      sendJson(
+        response,
+        409,
+        {
+          error: {
+            code: 'FULFILLMENT_ALREADY_DELIVERED',
+            message: 'This sale is already delivered and cannot be moved back to packing.',
+          },
+          requestId: getRequestId(request),
+        },
+        getRequestId(request),
+      );
+      return;
+    }
     const hash = createHash('sha256')
       .update(JSON.stringify({ saleId, status: input.status, packagingCost: input.packagingCost }))
       .digest('hex');

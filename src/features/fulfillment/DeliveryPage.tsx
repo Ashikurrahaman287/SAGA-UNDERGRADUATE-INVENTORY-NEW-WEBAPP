@@ -1,4 +1,4 @@
-import { MapPin, RefreshCw, UserRound } from 'lucide-react';
+import { CheckCheck, MapPin, RefreshCw, UserRound } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PageContainer, PageHeader } from '../../components/layout/PageContainer';
@@ -75,6 +75,24 @@ export function DeliveryPage(): ReactElement {
     } else await deliveries.refetch();
     setSubmitting(false);
   }
+  async function markAllDelivered(): Promise<void> {
+    setSubmitting(true);
+    setError('');
+    const response = await fetch('/api/deliveries/mark-all-delivered', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
+    });
+    if (!response.ok) {
+      const body = (await response.json()) as { error?: { message?: string } };
+      setError(body.error?.message || 'Deliveries could not be completed.');
+    } else {
+      const body = (await response.json()) as { data: { marked: number; skipped: number } };
+      setError(body.data.skipped ? `${body.data.marked} delivered; ${body.data.skipped} skipped.` : `${body.data.marked} delivery(ies) marked delivered.`);
+      await deliveries.refetch();
+    }
+    setSubmitting(false);
+  }
   async function assign(saleId: string): Promise<void> {
     const selected = riderId[saleId];
     if (!selected) {
@@ -112,13 +130,22 @@ export function DeliveryPage(): ReactElement {
             : 'Assign and monitor organization deliveries'
         }
       />
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap gap-2">
         <Button
           onClick={() => void deliveries.refetch()}
           className="border border-slate-300 bg-white text-slate-700"
         >
           <RefreshCw size={16} className="mr-2" /> Refresh
         </Button>
+        {auth.session?.role !== 'rider' && (
+          <Button
+            disabled={submitting}
+            onClick={() => void markAllDelivered()}
+            className="bg-emerald-700 text-white"
+          >
+            <CheckCheck size={16} className="mr-2" /> Mark all delivered
+          </Button>
+        )}
       </div>
       {error && (
         <p role="alert" className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -190,6 +217,10 @@ export function DeliveryPage(): ReactElement {
                           </Button>
                         </>
                       )}
+                    </div>
+                  ) : row.status === 'delivered' || row.status === 'cancelled' || row.status === 'failed' ? (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600">
+                      Terminal state
                     </div>
                   ) : (
                     <div className="flex w-full max-w-sm gap-2">
