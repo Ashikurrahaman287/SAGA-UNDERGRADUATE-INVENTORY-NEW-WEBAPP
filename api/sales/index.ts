@@ -8,6 +8,7 @@ import { requirePermission } from '../lib/auth/authorization-context.js';
 import { requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
 import { permissions } from '../../src/lib/permissions/permission-registry.js';
 import { salePlacedSms, sendSaleNotification } from '../_lib/notifications.js';
+import { renderOrderEmail, sendEmail } from '../_lib/email.js';
 
 const itemSchema = z
   .object({ productId: z.string().uuid(), quantity: z.number().int().positive() })
@@ -21,7 +22,7 @@ const createSchema = z
     discountValue: z.coerce.number().finite().min(0).default(0),
     deliveryFee: z.coerce.number().finite().min(0).default(0),
     paymentMethod: z
-      .enum(['cash', 'card', 'bank_transfer', 'mobile_money', 'other'])
+      .enum(['cash', 'card', 'bank_transfer', 'mobile_money', 'other', 'due'])
       .default('cash'),
     amountPaid: z.coerce.number().finite().min(0).default(0),
     packagingCost: z.coerce.number().finite().min(0).default(0),
@@ -253,10 +254,10 @@ export default async function sales(
       return;
     }
     const saleData = rpc.data as Record<string, unknown>;
-    if (input.customerId) {
+    if (input.customerId && saleData.idempotent !== true) {
       const customer = await context.client
         .from('customers')
-        .select('name,phone')
+        .select('name,phone,email')
         .eq('organization_id', context.organization.id)
         .eq('id', input.customerId)
         .maybeSingle();
@@ -275,6 +276,76 @@ export default async function sales(
             totalAmount: Number(saleData.total_amount || 0),
           }),
         ).catch(() => undefined);
+
+        if (customer.data.email) {
+          const consent = await context.client
+            .from('communication_consents')
+            .select('consent_status')
+            .eq('organization_id', context.organization.id)
+            .eq('customer_id', input.customerId)
+            .eq('channel', 'email')
+            .maybeSingle();
+          if (!consent.error && consent.data?.consent_status === 'granted') {
+            const [saleRecord, items, organization] = await Promise.all([
+              context.client.from('sales').select('created_at,subtotal,discount_amount,delivery_fee,total_amount,confirmed_paid_amount,amount_due,payment_method,delivery_scheduled_at,delivery_address_snapshot').eq('organization_id', context.organization.id).eq('id', saleData.sale_id).maybeSingle(),
+              context.client.from('sale_items').select('product_name_snapshot,sku_snapshot,quantity,unit_price,line_total').eq('organization_id', context.organization.id).eq('sale_id', saleData.sale_id).order('created_at'),
+              context.client.from('organizations').select('name,currency').eq('id', context.organization.id).maybeSingle(),
+            ]);
+            if (!saleRecord.error && !items.error && !organization.error && saleRecord.data) {
+              const address = input.deliveryAddressSnapshot;
+              const html = renderOrderEmail({
+                customerName: customer.data.name,
+                receiptNumber: String(saleData.receipt_number || ''),
+                createdAt: saleRecord.data.created_at,
+                paymentMethod: saleRecord.data.payment_method || 'due',
+                location: address?.addressLine || address?.city,
+                scheduledAt: saleRecord.data.delivery_scheduled_at,
+                items: (items.data || []).map((item) => ({
+                  name: item.product_name_snapshot,
+                  sku: item.sku_snapshot,
+                  quantity: Number(item.quantity),
+                  unitPrice: Number(item.unit_price),
+                  lineTotal: Number(item.line_total),
+                })),
+                subtotal: Number(saleRecord.data.subtotal),
+                discount: Number(saleRecord.data.discount_amount),
+                deliveryFee: Number(saleRecord.data.delivery_fee),
+                total: Number(saleRecord.data.total_amount),
+                paid: Number(saleRecord.data.confirmed_paid_amount || 0),
+                due: Number(saleRecord.data.amount_due || 0),
+                currency: organization.data?.currency || 'BDT',
+                businessName: organization.data?.name || 'UNDERGRADUATE HUB',
+              });
+              const log = await context.client.rpc('reserve_communication_send', {
+                p_organization_id: context.organization.id,
+                p_idempotency_key: `${input.idempotencyKey}:order-email`,
+                p_channel: 'email',
+                p_label: 'transactional',
+                p_template_type: 'receipt',
+                p_recipient: customer.data.email,
+                p_customer_id: input.customerId,
+                p_related_entity_type: 'sale',
+                p_related_entity_id: String(saleData.sale_id),
+              });
+              if (!log.error && log.data) {
+                const sent = await sendEmail({
+                  to: customer.data.email,
+                  subject: `Order confirmation - ${String(saleData.receipt_number || '')}`,
+                  html,
+                  text: `Your order ${String(saleData.receipt_number || '')} has been placed. Total ${Number(saleRecord.data.total_amount).toFixed(2)}; due ${Number(saleRecord.data.amount_due).toFixed(2)}.`,
+                });
+                await context.client.rpc('complete_communication_send', {
+                  p_organization_id: context.organization.id,
+                  p_log_id: log.data,
+                  p_status: sent.sent ? 'sent' : 'failed',
+                  p_provider_error_code: sent.sent ? null : 'EMAIL_SEND_FAILED',
+                  p_provider_message_id: sent.messageId || null,
+                  p_provider_response: { provider: sent.provider, error: sent.error || null },
+                });
+              }
+            }
+          }
+        }
       }
     }
     sendJson(

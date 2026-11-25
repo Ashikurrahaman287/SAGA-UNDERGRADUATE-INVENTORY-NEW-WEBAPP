@@ -7,7 +7,7 @@ import {
   ShoppingCart,
   UserRound,
 } from 'lucide-react';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PageContainer, PageHeader } from '../../components/layout/PageContainer';
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/States';
@@ -24,12 +24,18 @@ export function NewSalePage(): ReactElement {
   const [customerSearch, setCustomerSearch] = useState('');
   const [cart, setCart] = useState<SaleCartItem[]>([]);
   const [customerId, setCustomerId] = useState('');
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
+  const [newCustomerEmail, setNewCustomerEmail] = useState('');
+  const [customerSubmitting, setCustomerSubmitting] = useState(false);
+  const [customerError, setCustomerError] = useState('');
   const [sellerId, setSellerId] = useState('');
   const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
   const [discountValue, setDiscountValue] = useState('0');
   const [deliveryFee, setDeliveryFee] = useState('0');
   const [paymentMethod, setPaymentMethod] = useState<
-    'cash' | 'card' | 'bank_transfer' | 'mobile_money' | 'other'
+    'cash' | 'card' | 'bank_transfer' | 'mobile_money' | 'other' | 'due'
   >('cash');
   const [amountPaid, setAmountPaid] = useState('0');
   const [paymentReference, setPaymentReference] = useState('');
@@ -42,6 +48,7 @@ export function NewSalePage(): ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<Record<string, unknown> | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const products = useQuery({
     queryKey: ['sale-products', productSearch],
@@ -85,7 +92,39 @@ export function NewSalePage(): ReactElement {
   const formatMoney = (minor: number) =>
     formatMinorUnits(minor, auth.session?.organization.currency || 'USD');
 
-  const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
+  async function createCustomer(): Promise<void> {
+    setCustomerError('');
+    setCustomerSubmitting(true);
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
+        body: JSON.stringify({
+          name: newCustomerName,
+          phone: newCustomerPhone,
+          email: newCustomerEmail || undefined,
+          initialAddress: addressLine && addressCity ? { addressLine, city: addressCity } : undefined,
+        }),
+      });
+      const body = await response.json() as { data?: { id?: string }; error?: { message?: string } };
+      if (!response.ok || !body.data?.id) {
+        setCustomerError(body.error?.message || 'Customer could not be created.');
+        return;
+      }
+      setCustomerId(body.data.id);
+      setCustomerSearch(newCustomerName);
+      setCreatingCustomer(false);
+      setNewCustomerName('');
+      setNewCustomerPhone('');
+      setNewCustomerEmail('');
+      await customers.refetch();
+    } catch {
+      setCustomerError('The customer service could not be reached. Please try again.');
+    } finally {
+      setCustomerSubmitting(false);
+    }
+  }
 
   function addProduct(product: SaleProduct): void {
     const stock = Number(product.quantity);
@@ -131,31 +170,38 @@ export function NewSalePage(): ReactElement {
     }
     setSubmitting(true);
     setError('');
-    const response = await fetch('/api/sales', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
-      body: JSON.stringify({
-        idempotencyKey,
-        customerId: customerId || null,
-        sellerId: sellerId || null,
-        discountType,
-        discountValue: Number(discountValue || 0),
-        deliveryFee: Number(deliveryFee || 0),
-        paymentMethod,
-        amountPaid: Number(amountPaid || 0),
-        packagingCost: Number(packagingCost || 0),
-        paymentReference: paymentReference || undefined,
-        paymentNote: paymentNote || undefined,
-        deliveryAddressSnapshot:
-          addressLine || addressCity
-            ? { addressLine: addressLine || 'Pickup', city: addressCity || 'Local' }
-            : null,
-        deliveryScheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-        notes: notes || undefined,
-        items: cart.map((item) => ({ productId: item.productId, quantity: item.quantity })),
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch('/api/sales', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
+        body: JSON.stringify({
+          idempotencyKey,
+          customerId: customerId || null,
+          sellerId: sellerId || null,
+          discountType,
+          discountValue: Number(discountValue || 0),
+          deliveryFee: Number(deliveryFee || 0),
+          paymentMethod,
+          amountPaid: Number(amountPaid || 0),
+          packagingCost: Number(packagingCost || 0),
+          paymentReference: paymentReference || undefined,
+          paymentNote: paymentNote || undefined,
+          deliveryAddressSnapshot:
+            addressLine || addressCity
+              ? { addressLine: addressLine || 'Pickup', city: addressCity || 'Local' }
+              : null,
+          deliveryScheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          notes: notes || undefined,
+          items: cart.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+        }),
+      });
+    } catch {
+      setError('The sale service could not be reached. Please try again.');
+      setSubmitting(false);
+      return;
+    }
     if (!response.ok) {
       const body = (await response.json()) as { error?: { message?: string } };
       setError(body.error?.message || 'The sale could not be created.');
@@ -181,6 +227,7 @@ export function NewSalePage(): ReactElement {
           setAddressCity('');
           setScheduledAt('');
           setNotes('');
+          setIdempotencyKey(crypto.randomUUID());
         }}
       />
     );
@@ -294,6 +341,28 @@ export function NewSalePage(): ReactElement {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => { setCreatingCustomer((value) => !value); setCustomerError(''); }}
+            className="text-left text-sm font-semibold text-blue-700 hover:text-blue-900"
+          >
+            {creatingCustomer ? 'Close new customer form' : '+ Add customer'}
+          </button>
+          {creatingCustomer && (
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <Field label="Customer name">
+                <input required value={newCustomerName} onChange={(event) => setNewCustomerName(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              </Field>
+              <Field label="Phone">
+                <input required type="tel" value={newCustomerPhone} onChange={(event) => setNewCustomerPhone(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              </Field>
+              <Field label="Email (optional)">
+                <input type="email" value={newCustomerEmail} onChange={(event) => setNewCustomerEmail(event.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              </Field>
+              {customerError && <p role="alert" className="text-sm text-rose-700">{customerError}</p>}
+              <Button type="button" disabled={customerSubmitting || !newCustomerName.trim() || !newCustomerPhone.trim()} onClick={() => void createCustomer()} className="bg-blue-700 text-white">{customerSubmitting ? 'Saving...' : 'Save customer'}</Button>
+            </div>
+          )}
           <Field label="Seller attribution">
             <select
               value={sellerId}
@@ -354,6 +423,7 @@ export function NewSalePage(): ReactElement {
                 <option value="bank_transfer">Bank transfer</option>
                 <option value="mobile_money">Mobile money</option>
                 <option value="other">Other</option>
+                <option value="due">Due / credit</option>
               </select>
             </Field>
             <Field label="Amount paid">

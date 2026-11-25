@@ -27,6 +27,30 @@ export default async function operations(request: VercelRequest, response: Verce
     if (!context) return;
 
     if (request.method === 'POST') {
+      if (section === 'payments') {
+        requireSameOrigin(request);
+        requireCsrf(request);
+        const payment = z.object({
+          saleId: z.string().uuid(),
+          amount: z.coerce.number().finite().positive(),
+          paymentMethod: z.enum(['cash', 'card', 'bank_transfer', 'mobile_money', 'other']),
+          paymentReference: z.string().trim().max(200).optional(),
+          notes: z.string().trim().max(500).optional(),
+          idempotencyKey: z.string().trim().min(8).max(128),
+        }).parse(await readJson(request));
+        const received = await context.client.rpc('receive_sale_payment', {
+          p_organization_id: context.organization.id,
+          p_sale_id: payment.saleId,
+          p_amount: payment.amount,
+          p_payment_method: payment.paymentMethod,
+          p_payment_reference: payment.paymentReference || null,
+          p_notes: payment.notes || null,
+          p_idempotency_key: payment.idempotencyKey,
+        });
+        if (received.error) throw received.error;
+        sendJson(response, 200, { data: received.data, requestId: getRequestId(request) }, getRequestId(request));
+        return;
+      }
       if (section !== 'costs') {
         sendJson(response, 405, { error: { code: 'METHOD_NOT_ALLOWED', message: 'This section is read-only.' } }, getRequestId(request));
         return;
@@ -50,19 +74,18 @@ export default async function operations(request: VercelRequest, response: Verce
       if (categoryResult.error) throw categoryResult.error;
 
       const costPayload = {
-          organization_id: context.organization.id,
-          category_id: categoryResult.data.id,
-          amount: input.amount,
-          description: input.description || input.name,
-          expense_date: input.date,
-          label: input.name,
-          category: input.category,
-          notes: input.description || null,
-          created_by: context.auth.user.id,
+        organization_id: context.organization.id,
+        category_id: categoryResult.data.id,
+        amount: input.amount,
+        description: input.description || input.name,
+        expense_date: input.date,
+        label: input.name,
+        category: input.category,
+        notes: input.description || null,
       };
       const costResult = input.costId
         ? await context.client.from('operational_costs').update(costPayload).eq('organization_id', context.organization.id).eq('id', input.costId).select('id,amount,description,expense_date,created_at,label,category,notes').single()
-        : await context.client.from('operational_costs').insert(costPayload).select('id,amount,description,expense_date,created_at,label,category,notes').single();
+        : await context.client.from('operational_costs').insert({ ...costPayload, created_by: context.auth.user.id }).select('id,amount,description,expense_date,created_at,label,category,notes').single();
       if (costResult.error) throw costResult.error;
       await context.client.from('audit_logs').insert({
         organization_id: context.organization.id,
@@ -78,14 +101,25 @@ export default async function operations(request: VercelRequest, response: Verce
     }
 
     if (section === 'payments') {
-      const result = await context.client
+      const [result, dueSales] = await Promise.all([
+        context.client
         .from('payments')
         .select('id,amount,payment_method,payment_reference,collected_at,status,notes,sale_id,sales(receipt_number,customer_id,customers(name))')
         .eq('organization_id', context.organization.id)
         .order('collected_at', { ascending: false })
-        .limit(250);
+        .limit(250),
+        context.client
+          .from('sales')
+          .select('id,receipt_number,total_amount,confirmed_paid_amount,amount_paid,amount_due,payment_status,created_at,customers(name,phone,email)')
+          .eq('organization_id', context.organization.id)
+          .gt('amount_due', 0)
+          .neq('fulfillment_status', 'cancelled')
+          .order('created_at', { ascending: false })
+          .limit(250),
+      ]);
       if (result.error) throw result.error;
-      sendJson(response, 200, { data: result.data || [], requestId: getRequestId(request) }, getRequestId(request));
+      if (dueSales.error) throw dueSales.error;
+      sendJson(response, 200, { data: { payments: result.data || [], dueSales: dueSales.data || [] }, requestId: getRequestId(request) }, getRequestId(request));
       return;
     }
 

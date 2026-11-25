@@ -48,7 +48,7 @@ export function ReceiptPage(): ReactElement {
     );
   const data = query.data.data.data;
   const sale = data.sale;
-  const customer = sale.customers as { name?: string; phone?: string } | null;
+  const customer = sale.customers as { name?: string; phone?: string; email?: string } | null;
   const seller = sale.sellers as { name?: string; reference_code?: string } | null;
   const currency = data.organization?.currency || 'USD';
   const money = (value: unknown) =>
@@ -57,6 +57,7 @@ export function ReceiptPage(): ReactElement {
   const addressText =
     typeof addressSnapshot?.addressLine === 'string' ? addressSnapshot.addressLine : '';
   const notesText = typeof sale.notes === 'string' ? sale.notes : '';
+  const scheduledAt = typeof sale.delivery_scheduled_at === 'string' ? sale.delivery_scheduled_at : null;
   const businessTimezone = data.organization?.timezone || 'UTC';
   return (
     <PageContainer>
@@ -71,32 +72,39 @@ export function ReceiptPage(): ReactElement {
           <Printer size={16} className="mr-2" /> Print receipt
         </Button>
       </div>
-      <article className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-8 shadow-sm print:border-0 print:p-0 print:shadow-none">
-        <header className="border-b border-slate-200 pb-5 text-center">
-          <p className="text-xs font-bold tracking-[0.18em] text-blue-700">
+      <article className="mx-auto max-w-2xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+        <header className="bg-[#1b388c] px-8 py-7 text-center text-white print:px-4">
+          <p className="text-xs font-bold tracking-[0.18em] text-blue-100">
             {data.organization?.name || 'SAGA Inventory'}
           </p>
           {data.settings?.receipt_header && (
-            <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">
+            <p className="mt-2 whitespace-pre-wrap text-sm text-blue-50">
               {data.settings.receipt_header}
             </p>
           )}
           {data.organization?.business_phone && (
-            <p className="mt-2 text-xs text-slate-500">{data.organization.business_phone}</p>
+            <p className="mt-2 text-xs text-blue-100">{data.organization.business_phone}</p>
           )}
           {data.organization?.business_address && (
-            <p className="mt-1 text-xs text-slate-500">{data.organization.business_address}</p>
+            <p className="mt-1 text-xs text-blue-100">{data.organization.business_address}</p>
           )}
-          <h1 className="mt-3 text-2xl font-semibold text-slate-950">Sales receipt</h1>
-          <p className="mt-2 text-sm text-slate-500">{String(sale.receipt_number)}</p>
+          <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-blue-100">Order confirmation</p>
+          <h1 className="mt-3 text-2xl font-semibold text-white">Sales receipt</h1>
+          <p className="mt-2 text-sm text-blue-100">{String(sale.receipt_number)}</p>
         </header>
-        <div className="grid gap-4 py-5 text-sm sm:grid-cols-2">
+        <div className="bg-[#f0f5ff] px-8 py-5 text-sm text-slate-700 print:px-4">
+          <p className="font-semibold text-[#1e3a8a]">Thank you, {customer?.name?.split(/\s+/)[0] || 'Customer'}!</p>
+          <p className="mt-1">Your order has been placed successfully. Please find your purchase summary below.</p>
+        </div>
+        <div className="px-8 py-5 print:px-4">
+        <div className="grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Customer</p>
             <p className="mt-1 font-semibold text-slate-800">
               {customer?.name || 'Walk-in customer'}
             </p>
             {customer?.phone && <p className="mt-1 text-slate-500">{customer.phone}</p>}
+            {customer?.email && <p className="mt-1 text-slate-500">{customer.email}</p>}
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Sale date</p>
@@ -115,28 +123,35 @@ export function ReceiptPage(): ReactElement {
             )}
           </div>
         </div>
+        {scheduledAt && (
+          <section className="my-5 rounded-md border border-blue-100 border-l-4 border-l-blue-600 bg-[#f2f7ff] px-5 py-4 text-sm">
+            <p className="text-xs font-bold uppercase tracking-wide text-[#1e3a8a]">Delivery schedule</p>
+            <p className="mt-2 text-blue-800">{new Intl.DateTimeFormat(undefined,{dateStyle:'full',timeStyle:'short',timeZone:businessTimezone}).format(new Date(scheduledAt))}</p>
+            {addressText && <p className="mt-1 text-blue-800">{addressText}</p>}
+          </section>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-y border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-[#1b388c] text-xs uppercase tracking-wide text-white">
               <tr>
-                <th className="py-3">Item</th>
-                <th className="py-3">Qty</th>
-                <th className="py-3 text-right">Unit</th>
-                <th className="py-3 text-right">Total</th>
+                <th className="px-3 py-3">Item</th>
+                <th className="px-3 py-3 text-center">Qty</th>
+                <th className="px-3 py-3 text-right">Unit</th>
+                <th className="px-3 py-3 text-right">Subtotal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {data.items.map((item) => (
                 <tr key={String(item.sku_snapshot)}>
-                  <td className="py-3">
+                  <td className="bg-slate-50 px-3 py-3">
                     <span className="block font-semibold text-slate-800">
                       {String(item.product_name_snapshot)}
                     </span>
                     <span className="text-xs text-slate-500">{String(item.sku_snapshot)}</span>
                   </td>
-                  <td className="py-3">{String(item.quantity)}</td>
-                  <td className="py-3 text-right">{money(item.unit_price)}</td>
-                  <td className="py-3 text-right font-semibold">{money(item.line_total)}</td>
+                  <td className="bg-slate-50 px-3 py-3 text-center">{String(item.quantity)}</td>
+                  <td className="bg-slate-50 px-3 py-3 text-right">{money(item.unit_price)}</td>
+                  <td className="bg-slate-50 px-3 py-3 text-right font-semibold">{money(item.line_total)}</td>
                 </tr>
               ))}
             </tbody>
@@ -173,6 +188,11 @@ export function ReceiptPage(): ReactElement {
             {data.settings.receipt_footer}
           </footer>
         )}
+        <section className="mt-6 rounded-lg border border-green-200 bg-green-50 p-5 text-center print:break-inside-avoid">
+          <p className="font-semibold text-green-800">✓ Order placed successfully</p>
+          <p className="mt-2 text-sm text-slate-600">We’ll prepare your items with care. Thank you for choosing us.</p>
+        </section>
+        </div>
       </article>
     </PageContainer>
   );

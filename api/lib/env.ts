@@ -20,6 +20,11 @@ export function getServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv
     SUPABASE_ANON_KEY: source.SUPABASE_ANON_KEY || undefined,
     SUPABASE_SERVICE_ROLE_KEY: source.SUPABASE_SERVICE_ROLE_KEY || undefined,
     AUTH_REDIRECT_URL: source.AUTH_REDIRECT_URL || undefined,
+    SWIFTSMS_API_KEY: source.SWIFTSMS_API_KEY || undefined,
+    SWIFTSMS_BASE_URL: source.SWIFTSMS_BASE_URL || undefined,
+    EMAIL_PROVIDER: source.EMAIL_PROVIDER || undefined,
+    EMAIL_API_KEY: source.EMAIL_API_KEY || undefined,
+    EMAIL_FROM_ADDRESS: source.EMAIL_FROM_ADDRESS || undefined,
   });
 }
 
@@ -29,6 +34,11 @@ export function isServerConfigurationReady(source: NodeJS.ProcessEnv = process.e
     SUPABASE_ANON_KEY: source.SUPABASE_ANON_KEY || undefined,
     SUPABASE_SERVICE_ROLE_KEY: source.SUPABASE_SERVICE_ROLE_KEY || undefined,
     AUTH_REDIRECT_URL: source.AUTH_REDIRECT_URL || undefined,
+    SWIFTSMS_API_KEY: source.SWIFTSMS_API_KEY || undefined,
+    SWIFTSMS_BASE_URL: source.SWIFTSMS_BASE_URL || undefined,
+    EMAIL_PROVIDER: source.EMAIL_PROVIDER || undefined,
+    EMAIL_API_KEY: source.EMAIL_API_KEY || undefined,
+    EMAIL_FROM_ADDRESS: source.EMAIL_FROM_ADDRESS || undefined,
   });
   return Boolean(
     result.success &&

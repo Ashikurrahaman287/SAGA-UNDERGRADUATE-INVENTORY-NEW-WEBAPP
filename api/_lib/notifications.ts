@@ -25,8 +25,9 @@ export function paymentReceivedSms(data: SaleNotificationData): string {
   return `Dear ${firstName(data.customerName)}, payment of BDT ${(data.amount || 0).toFixed(2)} received for order ${data.receiptNumber}. Thank you. UNDERGRADUATE HUB`;
 }
 
-export async function sendSaleNotification(data: SaleNotificationData, message: string): Promise<void> {
+export async function sendSaleNotification(data: SaleNotificationData, message: string): Promise<boolean> {
   const phone = normalizeBangladeshPhone(data.phone || '');
-  if (!phone) return;
-  await sendSwiftSms({ recipients: [phone], message, label: 'transactional' });
+  if (!phone) return false;
+  const result = await sendSwiftSms({ recipients: [phone], message, label: 'transactional' });
+  return result.status === 'sent';
 }

@@ -25,8 +25,13 @@ type DeliveryRow = {
 
 export function DeliveryPage(): ReactElement {
   const auth = useAuth();
+  const [doneSale, setDoneSale] = useState<DeliveryRow | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState('0');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'bank_transfer' | 'mobile_money' | 'other'>('cash');
+  const [deliverWithDue, setDeliverWithDue] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const deliveries = useQuery({
     queryKey: ['deliveries'],
     queryFn: () => apiFetch<{ data: DeliveryRow[]; requestId: string }>('/api/deliveries'),
@@ -34,16 +39,28 @@ export function DeliveryPage(): ReactElement {
   async function deliveryDone(saleId: string): Promise<void> {
     setSubmitting(true);
     setError('');
-    const response = await fetch(`/api/deliveries/${saleId}/done`, {
+    setNotice('');
+    const response = await fetch(`/api/deliveries/${saleId}/confirm`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
-      body: JSON.stringify({ idempotencyKey: crypto.randomUUID() }),
+      body: JSON.stringify({
+        paymentAmount: Number(paymentAmount || 0),
+        paymentMethod,
+        deliverWithDue,
+        idempotencyKey: crypto.randomUUID(),
+      }),
     });
     if (!response.ok) {
       const body = (await response.json()) as { error?: { message?: string } };
       setError(body.error?.message || 'Delivery could not be completed.');
     } else {
+      const body = await response.json() as { data?: { amount_due?: number; paymentSms?: string; deliveredSms?: string } };
+      const remainingDue = Number(body.data?.amount_due || 0);
+      setNotice(remainingDue > 0 ? `Delivered. Remaining due: ${remainingDue.toFixed(2)}.` : 'Payment confirmed and delivery completed.');
+      setDoneSale(null);
+      setDeliverWithDue(false);
+      setPaymentAmount('0');
       await deliveries.refetch();
     }
     setSubmitting(false);
@@ -102,6 +119,36 @@ export function DeliveryPage(): ReactElement {
           {error}
         </p>
       )}{' '}
+      {notice && <p role="status" className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
+      {doneSale && (
+        <section className="mb-5 rounded-xl border border-emerald-200 bg-white p-5 shadow-sm" aria-label="Confirm delivery done">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-semibold text-slate-950">Confirm Delivery Done</h2>
+              <p className="mt-1 text-sm text-slate-600">{doneSale.sales?.receipt_number || 'Order'} · Due {Number(doneSale.sales?.amount_due || 0).toFixed(2)}</p>
+            </div>
+            <button type="button" className="text-sm text-slate-500 underline" onClick={() => setDoneSale(null)}>Close</button>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <label className="text-sm font-medium text-slate-700">Payment received
+              <input aria-label="Payment received" type="number" min="0" max={Number(doneSale.sales?.amount_due || 0)} step="0.01" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" />
+            </label>
+            <label className="text-sm font-medium text-slate-700">Payment method
+              <select aria-label="Payment method" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as typeof paymentMethod)} className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2">
+                <option value="cash">Cash</option><option value="card">Card</option><option value="bank_transfer">Bank transfer</option><option value="mobile_money">Mobile money</option><option value="other">Other</option>
+              </select>
+            </label>
+            <label className="flex items-end gap-2 pb-2 text-sm text-slate-700">
+              <input type="checkbox" checked={deliverWithDue} onChange={(event) => setDeliverWithDue(event.target.checked)} /> Deliver while balance remains due
+            </label>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button disabled={submitting || (Number(paymentAmount) < Number(doneSale.sales?.amount_due || 0) && !deliverWithDue)} onClick={() => void deliveryDone(doneSale.sale_id)} className="bg-emerald-700 text-white">
+              Confirm payment & delivery
+            </Button>
+          </div>
+        </section>
+      )}
       {deliveries.isPending ? (
         <LoadingState label="Loading deliveries" />
       ) : deliveries.isError ? (
@@ -183,7 +230,11 @@ export function DeliveryPage(): ReactElement {
                       </Button>
                       <Button
                         disabled={submitting}
-                        onClick={() => void deliveryDone(row.sale_id)}
+                        onClick={() => {
+                          setDoneSale(row);
+                          setPaymentAmount(String(Number(row.sales?.amount_due || 0)));
+                          setDeliverWithDue(Number(row.sales?.amount_due || 0) === 0);
+                        }}
                         className="col-span-2 bg-emerald-700 text-white sm:col-span-1"
                       >
                         <CheckCheck size={16} className="mr-2" /> Delivery Done

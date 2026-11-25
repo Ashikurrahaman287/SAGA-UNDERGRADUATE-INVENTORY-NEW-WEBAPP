@@ -21,7 +21,7 @@ export default async function deliveries(
           { count: 'exact' },
         )
         .eq('organization_id', context.organization.id)
-        .in('fulfillment_status', ['pending', 'processing', 'packed', 'ready_for_delivery', 'out_for_delivery'])
+        .in('fulfillment_status', ['ready_for_delivery', 'out_for_delivery'])
         .order('delivery_scheduled_at', { ascending: true, nullsFirst: false });
       if (result.error) throw result.error;
       const data = (result.data || []).map((sale) => {

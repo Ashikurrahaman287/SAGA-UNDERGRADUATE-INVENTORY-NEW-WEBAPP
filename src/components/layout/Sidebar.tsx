@@ -24,7 +24,7 @@ export function Sidebar({
         aria-hidden="true"
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col border-r border-slate-800 bg-[var(--color-sidebar)] text-slate-100 transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px]' : ''}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col border-r border-zinc-800 bg-[var(--color-sidebar)] text-zinc-100 transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px]' : ''}`}
         aria-label="Primary navigation"
       >
         <div className="flex h-[72px] items-center justify-between border-b border-white/10 px-4">
@@ -62,7 +62,7 @@ export function Sidebar({
                     onClick={onCloseMobile}
                     title={collapsed ? navigationItem.label : undefined}
                     className={({ isActive }) =>
-                      `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${isActive ? 'bg-white/10 font-semibold text-white shadow-sm' : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'} ${collapsed ? 'lg:justify-center' : ''}`
+                      `group relative flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors ${isActive ? 'border-zinc-700 bg-zinc-800 font-semibold text-zinc-50 shadow-sm before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-blue-400' : 'border-transparent text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'} ${collapsed ? 'lg:justify-center' : ''}`
                     }
                   >
                     <Icon size={18} className="shrink-0" />

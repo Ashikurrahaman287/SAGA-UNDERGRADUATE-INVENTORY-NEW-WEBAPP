@@ -10,6 +10,8 @@ export type OperationsSection = 'payments' | 'costs' | 'accounting' | 'reports' 
 
 type AccountingData = { revenue: number | string; collected: number | string; expenses: number | string; refunded: number | string; outstanding: number | string; net: number | string };
 type PaymentRow = { sales?: { receipt_number?: string; customers?: { name?: string } } | null; payment_method: string; payment_reference?: string | null; amount: number | string; status: string; collected_at?: string | null };
+type DueSale = { id: string; receipt_number: string; total_amount: number | string; confirmed_paid_amount?: number | string; amount_paid?: number | string; amount_due: number | string; payment_status: string; customers?: { name?: string; phone?: string | null; email?: string | null } | null };
+type PaymentsData = { payments: PaymentRow[]; dueSales: DueSale[] };
 type CostCategory = { id: string; name: string; is_active: boolean };
 type CostRow = { id: string; expense_date: string; expense_categories?: { name?: string } | null; description: string; notes?: string | null; label?: string | null; category?: string | null; amount: number | string };
 type ReportProduct = { name: string; sku: string; quantity: number | string; cost_price: number | string; selling_price: number | string };
@@ -75,16 +77,32 @@ export function OperationsPage({ section }: { section: OperationsSection }): Rea
     },
   });
 
+  const receivePayment = useMutation({
+    mutationFn: async (input: { saleId: string; amount: number; paymentMethod: 'cash' | 'card' | 'bank_transfer' | 'mobile_money' | 'other'; paymentReference?: string; notes?: string }) => {
+      const response = await fetch('/api/operations?section=payments', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
+        body: JSON.stringify({ ...input, idempotencyKey: crypto.randomUUID() }),
+      });
+      const body = await response.json() as { error?: { message?: string } };
+      if (!response.ok) throw new Error(body.error?.message || 'Payment could not be recorded.');
+      return body;
+    },
+    onSuccess: () => void queryClient.invalidateQueries(),
+  });
+  const receivePaymentMutate = receivePayment.mutateAsync;
+
   const content = useMemo(() => {
     if (!query.data) return null;
     const data = query.data.data.data as unknown;
     if (section === 'accounting') return <Accounting data={data as AccountingData} currency={currency} />;
-    if (section === 'payments') return <Payments data={data as PaymentRow[]} currency={currency} />;
+    if (section === 'payments') return <Payments data={data as PaymentsData} currency={currency} onReceive={(input) => receivePaymentMutate(input)} />;
     if (section === 'costs') return <Costs data={data as { categories: CostCategory[]; costs: CostRow[] }} currency={currency} onEdit={(row: CostRow) => { setEditingCostId(row.id); setCostName(row.description || row.label || ''); setCostCategory(row.expense_categories?.name || row.category || 'Miscellaneous'); setCostAmount(String(row.amount || 0)); setCostDate(row.expense_date || new Date().toISOString().slice(0, 10)); setCostDescription(row.notes || row.description || ''); }} />;
     if (section === 'reports') return <Reports data={data as { sales: Array<{ total_amount: number | string }>; products: ReportProduct[]; customerCount: number; inventoryCost: number | string; inventoryRetail: number | string }} currency={currency} />;
     if (section === 'crm') return <CRM data={data as CRMRow[]} currency={currency} />;
     return <Investments data={data as InvestmentRow[]} currency={currency} />;
-  }, [query.data, section, currency]);
+  }, [query.data, section, currency, receivePaymentMutate]);
 
   return (
     <PageContainer>
@@ -124,9 +142,44 @@ function Accounting({ data, currency }: { data: AccountingData; currency: string
   return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><Metric label="Revenue" value={money(data.revenue,currency)} /><Metric label="Collected" value={money(data.collected,currency)} /><Metric label="Expenses" value={money(data.expenses,currency)} /><Metric label="Refunded" value={money(data.refunded,currency)} /><Metric label="Outstanding" value={money(data.outstanding,currency)} /><Metric label="Net cash" value={money(data.net,currency)} /></div>;
 }
 
-function Payments({ data, currency }: { data: PaymentRow[]; currency: string }) {
-  if (!data.length) return <EmptyState title="No payments" description="Payments recorded with sales will appear here." />;
-  return <Table headers={['Receipt','Customer','Method','Reference','Amount','Status','Collected']} rows={data.map((row) => [row.sales?.receipt_number || '—',row.sales?.customers?.name || '—',row.payment_method,row.payment_reference || '—',money(row.amount,currency),row.status,row.collected_at ? new Date(row.collected_at).toLocaleString() : '—'])} />;
+function Payments({ data, currency, onReceive }: { data: PaymentsData; currency: string; onReceive: (input: { saleId: string; amount: number; paymentMethod: 'cash' | 'card' | 'bank_transfer' | 'mobile_money' | 'other'; paymentReference?: string; notes?: string }) => Promise<unknown> }) {
+  const [activeSaleId, setActiveSaleId] = useState<string | null>(null);
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState<'cash' | 'card' | 'bank_transfer' | 'mobile_money' | 'other'>('cash');
+  const [reference, setReference] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  async function submit(sale: DueSale) {
+    const entered = Number(amount);
+    if (!Number.isFinite(entered) || entered <= 0 || entered > Number(sale.amount_due)) {
+      setError('Enter an amount greater than zero and no more than the remaining due.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await onReceive({ saleId: sale.id, amount: entered, paymentMethod: method, paymentReference: reference || undefined, notes: notes || undefined });
+      setActiveSaleId(null);
+      setAmount('');
+      setReference('');
+      setNotes('');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Payment could not be recorded.');
+    } finally {
+      setSaving(false);
+    }
+  }
+  return <div className="space-y-6">
+    <section>
+      <h2 className="mb-3 text-base font-semibold text-slate-950">Outstanding balances</h2>
+      {data.dueSales.length ? <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Receipt','Customer','Contact','Total','Paid','Due','Action'].map((h)=><th key={h} className="px-4 py-3">{h}</th>)}</tr></thead><tbody>{data.dueSales.map((sale)=><tr key={sale.id} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{sale.receipt_number}</td><td className="px-4 py-3">{sale.customers?.name || 'Walk-in'}</td><td className="px-4 py-3">{sale.customers?.phone || sale.customers?.email || '—'}</td><td className="px-4 py-3">{money(sale.total_amount,currency)}</td><td className="px-4 py-3">{money(sale.confirmed_paid_amount ?? sale.amount_paid ?? 0,currency)}</td><td className="px-4 py-3 font-semibold text-amber-800">{money(sale.amount_due,currency)}</td><td className="px-4 py-3"><button type="button" className="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white" onClick={()=>{setActiveSaleId(activeSaleId===sale.id?null:sale.id);setAmount(String(sale.amount_due));setError('')}}>Receive money</button>{activeSaleId===sale.id&&<form className="mt-3 min-w-56 space-y-2" onSubmit={(event)=>{event.preventDefault();void submit(sale)}}><input aria-label="Received amount" type="number" min="0.01" max={Number(sale.amount_due)} step="0.01" value={amount} onChange={(event)=>setAmount(event.target.value)} className="w-full rounded-md border border-slate-300 px-2 py-1.5"/><select aria-label="Payment method" value={method} onChange={(event)=>setMethod(event.target.value as typeof method)} className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5"><option value="cash">Cash</option><option value="card">Card</option><option value="bank_transfer">Bank transfer</option><option value="mobile_money">Mobile money</option><option value="other">Other</option></select><input aria-label="Payment reference" value={reference} onChange={(event)=>setReference(event.target.value)} placeholder="Reference (optional)" className="w-full rounded-md border border-slate-300 px-2 py-1.5"/><input aria-label="Payment note" value={notes} onChange={(event)=>setNotes(event.target.value)} placeholder="Note (optional)" className="w-full rounded-md border border-slate-300 px-2 py-1.5"/><button disabled={saving} className="w-full rounded-md bg-blue-700 px-3 py-1.5 font-semibold text-white">{saving?'Saving…':'Confirm payment'}</button>{error&&<p role="alert" className="text-xs text-rose-700">{error}</p>}</form>}</td></tr>)}</tbody></table></div> : <EmptyState title="No outstanding balances" description="All active orders are paid." />}
+    </section>
+    <section>
+      <h2 className="mb-3 text-base font-semibold text-slate-950">Payment history</h2>
+      {data.payments.length ? <Table headers={['Receipt','Customer','Method','Reference','Amount','Status','Collected']} rows={data.payments.map((row) => [row.sales?.receipt_number || '—',row.sales?.customers?.name || '—',row.payment_method,row.payment_reference || '—',money(row.amount,currency),row.status,row.collected_at ? new Date(row.collected_at).toLocaleString() : '—'])} /> : <EmptyState title="No payments" description="Recorded payments will appear here." />}
+    </section>
+  </div>;
 }
 
 function Costs({ data, currency, onEdit }: { data: { categories: CostCategory[]; costs: CostRow[] }; currency: string; onEdit: (row: CostRow) => void }) {

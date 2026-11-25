@@ -21,7 +21,7 @@ export default async function packaging(
         { count: 'exact' },
       )
       .eq('organization_id', context.organization.id)
-      .in('packaging_status', ['pending', 'in_progress', 'packed', 'ready'])
+      .in('packaging_status', ['pending', 'in_progress', 'packed'])
       .order('updated_at', { ascending: false });
     if (search) {
       query = query.or(

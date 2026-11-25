@@ -19,7 +19,7 @@ export default async function receipt(
     const sale = await context.client
       .from('sales')
       .select(
-        'id, receipt_number, customer_id, seller_id, subtotal, discount_amount, delivery_fee, total_amount, amount_paid, amount_due, payment_status, payment_method, delivery_address_snapshot, notes, created_at, customers(name, phone), sellers(name, reference_code)',
+        'id, receipt_number, customer_id, seller_id, subtotal, discount_amount, delivery_fee, total_amount, amount_paid, confirmed_paid_amount, amount_due, payment_status, payment_method, delivery_address_snapshot, delivery_scheduled_at, notes, created_at, customers(name, phone, email), sellers(name, reference_code)',
       )
       .eq('organization_id', context.organization.id)
       .eq('id', id)
