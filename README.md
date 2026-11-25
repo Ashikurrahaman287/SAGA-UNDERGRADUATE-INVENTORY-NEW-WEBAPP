@@ -16,6 +16,9 @@ npm run dev
 
 Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run typecheck`, `npm run typecheck:api`, `npm run test`, `npm run test:smoke`, and `npm run format:check`.
 
+<img width="1920" height="916" alt="image" src="https://github.com/user-attachments/assets/9cac52ae-584f-443d-b3e6-7307654811da" />
+
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
