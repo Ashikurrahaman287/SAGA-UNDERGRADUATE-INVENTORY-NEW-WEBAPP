@@ -171,7 +171,7 @@ export async function sendSwiftSms(
       parsed = JSON.parse(raw);
     } catch {
       const providerObject: Record<string, unknown> = {};
-      const pairs = raw.matchAll(/['\"]([a-zA-Z0-9_]+)['\"]\s*[:=]\s*(?:['\"]([^'\"]*)['\"]|(-?\d+(?:\.\d+)?)|(True|False|None))/g);
+      const pairs = raw.matchAll(/['"]([a-zA-Z0-9_]+)['"]\s*[:=]\s*(?:['"]([^'"]*)['"]|(-?\d+(?:\.\d+)?)|(True|False|None))/g);
       for (const match of pairs) {
         providerObject[match[1]] = match[2] ?? (match[3] ? Number(match[3]) : match[4] === 'True' ? true : match[4] === 'False' ? false : null);
       }

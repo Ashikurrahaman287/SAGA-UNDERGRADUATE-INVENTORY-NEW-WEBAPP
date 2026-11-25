@@ -10,6 +10,7 @@ import {
 } from '../../api/_lib/swiftsms';
 
 describe('communications provider safety', () => {
+
   it('normalizes Bangladeshi phone numbers', () => {
     expect(normalizeBangladeshPhone('+8801712345678')).toBe('01712345678');
     expect(normalizeBangladeshPhone('8801812345678')).toBe('01812345678');

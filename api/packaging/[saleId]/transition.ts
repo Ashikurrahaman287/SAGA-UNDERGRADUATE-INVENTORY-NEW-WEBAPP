@@ -27,7 +27,14 @@ export default async function transition(
     const context = await requirePermission(request, response, permissions.packagingUpdate);
     if (!context) return;
     const saleId = z.string().uuid().parse(request.query.saleId);
-    const input = schema.parse(await readJson(request));
+    const body = await readJson(request);
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) {
+      console.error('[packaging-invalid]', parsed.error.issues);
+      sendJson(response, 400, { error: { code: 'INVALID_REQUEST', message: 'The request could not be processed.' }, requestId: getRequestId(request) }, getRequestId(request));
+      return;
+    }
+    const input = parsed.data;
     const saleState = await context.client
       .from('sales')
       .select('fulfillment_status')

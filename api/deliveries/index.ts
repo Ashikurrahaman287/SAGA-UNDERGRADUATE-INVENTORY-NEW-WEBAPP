@@ -13,6 +13,42 @@ export default async function deliveries(
   try {
     const context = await requirePermission(request, response, permissions.deliveryView);
     if (!context) return;
+    if (context.organization.role === 'admin') {
+      const result = await context.client
+        .from('sales')
+        .select(
+          'id, receipt_number, total_amount, amount_due, delivery_scheduled_at, delivery_address_snapshot, fulfillment_status, customers(name, phone)',
+          { count: 'exact' },
+        )
+        .eq('organization_id', context.organization.id)
+        .in('fulfillment_status', ['pending', 'processing', 'packed', 'ready_for_delivery', 'out_for_delivery'])
+        .order('delivery_scheduled_at', { ascending: true, nullsFirst: false });
+      if (result.error) throw result.error;
+      const data = (result.data || []).map((sale) => {
+        const customerRelation = sale.customers;
+        const customer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
+        return {
+          id: sale.id,
+          sale_id: sale.id,
+          rider_user_id: null,
+          status: sale.fulfillment_status === 'ready_for_delivery' ? 'assigned' : sale.fulfillment_status,
+          scheduled_at: sale.delivery_scheduled_at,
+          assigned_at: null,
+          delivered_at: null,
+          created_at: null,
+          sales: {
+            receipt_number: sale.receipt_number,
+            total_amount: sale.total_amount,
+            amount_due: sale.amount_due,
+            delivery_address_snapshot: sale.delivery_address_snapshot,
+            customers: customer,
+          },
+        };
+      });
+      sendJson(response, 200, { data, requestId: getRequestId(request) }, getRequestId(request));
+      return;
+    }
+
     let query = context.client
       .from('delivery_assignments')
       .select(

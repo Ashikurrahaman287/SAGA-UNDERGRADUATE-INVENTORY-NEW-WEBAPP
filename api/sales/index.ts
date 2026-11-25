@@ -24,6 +24,7 @@ const createSchema = z
       .enum(['cash', 'card', 'bank_transfer', 'mobile_money', 'other'])
       .default('cash'),
     amountPaid: z.coerce.number().finite().min(0).default(0),
+    packagingCost: z.coerce.number().finite().min(0).default(0),
     paymentReference: z.string().trim().max(200).optional(),
     paymentNote: z.string().trim().max(500).optional(),
     deliveryAddressSnapshot: z
@@ -181,6 +182,7 @@ export default async function sales(
           deliveryFee: input.deliveryFee,
           paymentMethod: input.paymentMethod,
           amountPaid: input.amountPaid,
+          packagingCost: input.packagingCost,
           paymentReference: input.paymentReference,
           paymentNote: input.paymentNote,
           deliveryAddressSnapshot: input.deliveryAddressSnapshot,
@@ -217,6 +219,7 @@ export default async function sales(
       p_notes: input.notes || null,
       p_items: input.items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
       p_request_id: context.requestId,
+      p_packaging_cost: input.packagingCost,
     });
     if (rpc.error) {
       const message = rpc.error.message || '';

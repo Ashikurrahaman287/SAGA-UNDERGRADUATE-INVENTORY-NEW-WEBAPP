@@ -1,4 +1,4 @@
-import { CheckCheck, MapPin, RefreshCw, UserRound } from 'lucide-react';
+import { CheckCheck, Clock3, Copy, Mail, MapPin, RefreshCw, Trash2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PageContainer, PageHeader } from '../../components/layout/PageContainer';
@@ -25,56 +25,60 @@ type DeliveryRow = {
 
 export function DeliveryPage(): ReactElement {
   const auth = useAuth();
-  const [riderId, setRiderId] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const deliveries = useQuery({
     queryKey: ['deliveries'],
     queryFn: () => apiFetch<{ data: DeliveryRow[]; requestId: string }>('/api/deliveries'),
   });
-  const riders = useQuery({
-    queryKey: ['active-riders'],
-    queryFn: () => apiFetch<{ data: unknown[]; requestId: string }>('/api/admin/riders'),
-  });
-  async function updateStatus(
-    saleId: string,
-    status: 'out_for_delivery' | 'delivered' | 'failed',
-  ): Promise<void> {
+  async function deliveryDone(saleId: string): Promise<void> {
     setSubmitting(true);
     setError('');
-    const response = await fetch(`/api/deliveries/${saleId}/status`, {
-      method: 'PATCH',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
-      body: JSON.stringify({ status, idempotencyKey: crypto.randomUUID() }),
-    });
-    if (!response.ok) {
-      const body = (await response.json()) as { error?: { message?: string } };
-      setError(body.error?.message || 'Delivery status could not be updated.');
-    } else await deliveries.refetch();
-    setSubmitting(false);
-  }
-  async function collectPayment(saleId: string): Promise<void> {
-    const amount = window.prompt('Amount collected');
-    if (!amount) return;
-    setSubmitting(true);
-    setError('');
-    const response = await fetch(`/api/deliveries/${saleId}/collect-payment`, {
+    const response = await fetch(`/api/deliveries/${saleId}/done`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
-      body: JSON.stringify({
-        amount: Number(amount),
-        paymentMethod: 'cash',
-        idempotencyKey: crypto.randomUUID(),
-      }),
+      body: JSON.stringify({ idempotencyKey: crypto.randomUUID() }),
     });
     if (!response.ok) {
       const body = (await response.json()) as { error?: { message?: string } };
-      setError(body.error?.message || 'Payment could not be collected.');
-    } else await deliveries.refetch();
+      setError(body.error?.message || 'Delivery could not be completed.');
+    } else {
+      await deliveries.refetch();
+    }
     setSubmitting(false);
   }
+
+  async function deliveryAction(saleId: string, action: 'reschedule' | 'cancel' | 'reminder', extra: Record<string, unknown> = {}): Promise<void> {
+    setSubmitting(true);
+    setError('');
+    const response = await fetch(`/api/deliveries/${saleId}/actions`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
+      body: JSON.stringify({ action, idempotencyKey: crypto.randomUUID(), ...extra }),
+    });
+    if (!response.ok) {
+      const body = (await response.json()) as { error?: { message?: string } };
+      setError(body.error?.message || 'Delivery action could not be completed.');
+    } else {
+      await deliveries.refetch();
+    }
+    setSubmitting(false);
+  }
+
+  async function copyDetails(row: DeliveryRow): Promise<void> {
+    const sale = Array.isArray(row.sales) ? row.sales[0] : row.sales;
+    const customerRelation = sale?.customers;
+    const customer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
+    const address = typeof sale?.delivery_address_snapshot?.addressLine === 'string'
+      ? sale.delivery_address_snapshot.addressLine
+      : 'Address unavailable';
+    const text = `Order: ${sale?.receipt_number || 'N/A'}\nCustomer: ${customer?.name || 'Walk-in customer'}\nPhone: ${customer?.phone || 'N/A'}\nAddress: ${address}\nDue: ${Number(sale?.amount_due || 0).toFixed(2)}\nStatus: ${row.status}`;
+    await navigator.clipboard.writeText(text);
+    setError('Delivery details copied.');
+  }
+
   async function markAllDelivered(): Promise<void> {
     setSubmitting(true);
     setError('');
@@ -93,41 +97,14 @@ export function DeliveryPage(): ReactElement {
     }
     setSubmitting(false);
   }
-  async function assign(saleId: string): Promise<void> {
-    const selected = riderId[saleId];
-    if (!selected) {
-      setError('Select a Rider first.');
-      return;
-    }
-    setSubmitting(true);
-    setError('');
-    const response = await fetch(`/api/deliveries/${saleId}/assign`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
-      body: JSON.stringify({ riderUserId: selected, idempotencyKey: crypto.randomUUID() }),
-    });
-    if (!response.ok) {
-      const body = (await response.json()) as { error?: { message?: string } };
-      setError(body.error?.message || 'Delivery could not be assigned.');
-    } else await deliveries.refetch();
-    setSubmitting(false);
-  }
   const rows = deliveries.data?.data.data || [];
-  const riderRows = (riders.data?.data.data || []) as Array<{
-    id: string;
-    user_id?: string;
-    name?: string;
-  }>;
   return (
     <PageContainer>
       <PageHeader
         eyebrow="Fulfillment"
-        title={auth.session?.role === 'rider' ? 'My Deliveries' : 'Delivery Queue'}
+        title="Delivery Queue"
         description={
-          auth.session?.role === 'rider'
-            ? 'Assigned deliveries only'
-            : 'Assign and monitor organization deliveries'
+          'Complete payments, deliveries, reschedules, reminders, and cancellations'
         }
       />
       <div className="mb-4 flex flex-wrap gap-2">
@@ -137,7 +114,7 @@ export function DeliveryPage(): ReactElement {
         >
           <RefreshCw size={16} className="mr-2" /> Refresh
         </Button>
-        {auth.session?.role !== 'rider' && (
+        {auth.session?.role === 'admin' && (
           <Button
             disabled={submitting}
             onClick={() => void markAllDelivered()}
@@ -188,65 +165,55 @@ export function DeliveryPage(): ReactElement {
                       <strong className="text-slate-900">{row.status.replaceAll('_', ' ')}</strong>
                     </p>
                   </div>
-                  {auth.session?.role === 'rider' ? (
-                    <div className="flex w-full max-w-sm flex-wrap gap-2">
-                      {row.status === 'assigned' && (
-                        <Button
-                          disabled={submitting}
-                          onClick={() => void updateStatus(row.sale_id, 'out_for_delivery')}
-                          className="border border-slate-300 bg-white text-slate-700"
-                        >
-                          Start delivery
-                        </Button>
-                      )}
-                      {row.status === 'out_for_delivery' && (
-                        <>
-                          <Button
-                            disabled={submitting}
-                            onClick={() => void collectPayment(row.sale_id)}
-                            className="border border-slate-300 bg-white text-slate-700"
-                          >
-                            Collect payment
-                          </Button>
-                          <Button
-                            disabled={submitting}
-                            onClick={() => void updateStatus(row.sale_id, 'delivered')}
-                            className="bg-blue-600 text-white"
-                          >
-                            Mark delivered
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  ) : row.status === 'delivered' || row.status === 'cancelled' || row.status === 'failed' ? (
+                  {row.status === 'delivered' || row.status === 'cancelled' || row.status === 'failed' ? (
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600">
                       Terminal state
                     </div>
                   ) : (
-                    <div className="flex w-full max-w-sm gap-2">
-                      <select
-                        value={riderId[row.sale_id] || ''}
-                        onChange={(event) =>
-                          setRiderId((current) => ({
-                            ...current,
-                            [row.sale_id]: event.target.value,
-                          }))
-                        }
-                        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      >
-                        <option value="">Select active Rider</option>
-                        {riderRows.map((rider) => (
-                          <option key={rider.id} value={rider.user_id || rider.id}>
-                            {rider.name || 'Rider'}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="grid w-full max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
                       <Button
                         disabled={submitting}
-                        onClick={() => void assign(row.sale_id)}
-                        className="bg-blue-600 text-white"
+                        onClick={() => void copyDetails(row)}
+                        className="border border-slate-300 bg-white text-slate-700"
                       >
-                        <UserRound size={16} className="mr-2" /> Assign
+                        <Copy size={16} className="mr-2" /> Copy details
+                      </Button>
+                      <Button
+                        disabled={submitting}
+                        onClick={async () => {
+                          const scheduledAt = window.prompt('Reschedule date/time (YYYY-MM-DDTHH:mm)', row.scheduled_at ? new Date(row.scheduled_at).toISOString().slice(0, 16) : '');
+                          if (!scheduledAt) return;
+                          const notes = window.prompt('Reschedule notes', '') || '';
+                          await deliveryAction(row.sale_id, 'reschedule', { scheduledAt: new Date(scheduledAt).toISOString(), notes });
+                        }}
+                        className="border border-slate-300 bg-white text-slate-700"
+                      >
+                        <Clock3 size={16} className="mr-2" /> Reschedule
+                      </Button>
+                      <Button
+                        disabled={submitting}
+                        onClick={() => void deliveryAction(row.sale_id, 'reminder')}
+                        className="border border-slate-300 bg-white text-slate-700"
+                      >
+                        <Mail size={16} className="mr-2" /> Email reminder
+                      </Button>
+                      <Button
+                        disabled={submitting}
+                        onClick={async () => {
+                          if (!window.confirm('Cancel this order and restock every item?')) return;
+                          const reason = window.prompt('Cancellation reason', '') || '';
+                          await deliveryAction(row.sale_id, 'cancel', { notes: reason });
+                        }}
+                        className="border border-rose-200 bg-rose-50 text-rose-700"
+                      >
+                        <Trash2 size={16} className="mr-2" /> Cancel order
+                      </Button>
+                      <Button
+                        disabled={submitting}
+                        onClick={() => void deliveryDone(row.sale_id)}
+                        className="col-span-2 bg-emerald-700 text-white sm:col-span-1"
+                      >
+                        <CheckCheck size={16} className="mr-2" /> Delivery Done
                       </Button>
                     </div>
                   )}

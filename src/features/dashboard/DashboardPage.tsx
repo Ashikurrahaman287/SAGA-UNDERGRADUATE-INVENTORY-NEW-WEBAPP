@@ -255,7 +255,7 @@ function DashboardContent({
           icon={<BarChart3 />}
           label="Net profit"
           value={money(kpi.netProfit, currency)}
-          detail="Accounting inputs required"
+          detail={kpi.netProfit === null ? 'Accounting inputs unavailable' : `Gross - ${money(kpi.operationalCost || 0, currency)} operating - ${money(kpi.packagingCost || 0, currency)} packaging`}
           href="/app/accounting"
           tone="slate"
         />

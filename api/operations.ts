@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { getRequestId } from './lib/request-id.js';
 import { sendJson } from './lib/response.js';
-import { readJson, sendAuthFailure, methodNotAllowed } from './lib/auth/http.js';
+import { readJson, sendAuthFailure } from './lib/auth/http.js';
 import { requirePermission } from './lib/auth/authorization-context.js';
 import { requireCsrf, requireSameOrigin } from './lib/auth/security.js';
 import { permissions } from '../src/lib/permissions/permission-registry.js';
@@ -34,6 +34,7 @@ export default async function operations(request: VercelRequest, response: Verce
       requireSameOrigin(request);
       requireCsrf(request);
       const input = z.object({
+        costId: z.string().uuid().optional(),
         name: z.string().trim().min(1).max(200),
         category: z.string().trim().min(1).max(160),
         amount: z.coerce.number().positive(),
@@ -48,20 +49,32 @@ export default async function operations(request: VercelRequest, response: Verce
         .single();
       if (categoryResult.error) throw categoryResult.error;
 
-      const costResult = await context.client
-        .from('operational_costs')
-        .insert({
+      const costPayload = {
           organization_id: context.organization.id,
           category_id: categoryResult.data.id,
           amount: input.amount,
           description: input.description || input.name,
           expense_date: input.date,
+          label: input.name,
+          category: input.category,
+          notes: input.description || null,
           created_by: context.auth.user.id,
-        })
-        .select('id,amount,description,expense_date,created_at')
-        .single();
+          updated_by: context.auth.user.id,
+      };
+      const costResult = input.costId
+        ? await context.client.from('operational_costs').update(costPayload).eq('organization_id', context.organization.id).eq('id', input.costId).select('id,amount,description,expense_date,created_at').single()
+        : await context.client.from('operational_costs').insert(costPayload).select('id,amount,description,expense_date,created_at').single();
       if (costResult.error) throw costResult.error;
-      sendJson(response, 201, { data: costResult.data, requestId: getRequestId(request) }, getRequestId(request));
+      await context.client.from('audit_logs').insert({
+        organization_id: context.organization.id,
+        actor_user_id: context.auth.user.id,
+        action: input.costId ? 'operational_cost_updated' : 'operational_cost_created',
+        entity_type: 'operational_cost',
+        entity_id: costResult.data.id,
+        after_data: costPayload,
+        request_id: getRequestId(request),
+      });
+      sendJson(response, input.costId ? 200 : 201, { data: costResult.data, requestId: getRequestId(request) }, getRequestId(request));
       return;
     }
 

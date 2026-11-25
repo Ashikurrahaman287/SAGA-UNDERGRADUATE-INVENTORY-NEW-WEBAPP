@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { URL } from 'node:url';
 import { config } from 'dotenv';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 config({ path: path.resolve(process.cwd(), '.env') });
 
@@ -101,8 +102,11 @@ const server = http.createServer(async (incoming, outgoing) => {
       }
     }
 
-    const query = Object.fromEntries(url.searchParams.entries());
-    const request: any = {
+    const query = {
+      ...Object.fromEntries(url.searchParams.entries()),
+      ...params,
+    };
+    const request = {
       method: incoming.method,
       url: incoming.url,
       headers,
@@ -113,13 +117,13 @@ const server = http.createServer(async (incoming, outgoing) => {
       socket: incoming.socket,
     };
 
-    const response: any = {
+    const response = {
       status(code: number) {
         outgoing.statusCode = code;
         return response;
       },
       setHeader(name: string, value: number | string | readonly string[]) {
-        outgoing.setHeader(name, value as any);
+        outgoing.setHeader(name, value as number | string | readonly string[]);
         return response;
       },
       getHeader(name: string) {
@@ -135,7 +139,7 @@ const server = http.createServer(async (incoming, outgoing) => {
     };
 
     const module = await import(`file://${route.modulePath.replaceAll('\\', '/')}`);
-    await module.default(request, response);
+    await module.default(request as unknown as VercelRequest, response as unknown as VercelResponse);
   } catch (error) {
     console.error(error);
     if (!outgoing.headersSent) outgoing.setHeader('Content-Type', 'application/json');

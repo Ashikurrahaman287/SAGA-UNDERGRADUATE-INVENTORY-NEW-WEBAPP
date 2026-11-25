@@ -29,7 +29,7 @@ export function ProductCatalogPage({
   const currency = auth.session?.organization.currency || 'USD';
   const role = auth.session?.role;
   const [search, setSearch] = useState('');
-  const [active, setActive] = useState('true');
+  const [active, setActive] = useState('all');
   const [stockStatus, setStockStatus] = useState(lowStockOnly ? 'low_stock' : '');
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);

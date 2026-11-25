@@ -8,6 +8,8 @@ export type DashboardSummary = {
     revenue: DashboardMoney;
     paymentsDue: DashboardMoney;
     grossProfit: DashboardMoney | null;
+    operationalCost: DashboardMoney;
+    packagingCost: DashboardMoney;
     netProfit: DashboardMoney | null;
     stockValue: DashboardMoney;
     lowStockCount: number;

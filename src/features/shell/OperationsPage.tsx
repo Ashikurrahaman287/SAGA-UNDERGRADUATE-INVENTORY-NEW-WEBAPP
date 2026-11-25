@@ -8,6 +8,14 @@ import { useAuth } from '../auth/use-auth';
 
 export type OperationsSection = 'payments' | 'costs' | 'accounting' | 'reports' | 'crm' | 'investments';
 
+type AccountingData = { revenue: number | string; collected: number | string; expenses: number | string; refunded: number | string; outstanding: number | string; net: number | string };
+type PaymentRow = { sales?: { receipt_number?: string; customers?: { name?: string } } | null; payment_method: string; payment_reference?: string | null; amount: number | string; status: string; collected_at?: string | null };
+type CostCategory = { id: string; name: string; is_active: boolean };
+type CostRow = { id: string; expense_date: string; expense_categories?: { name?: string } | null; description: string; notes?: string | null; label?: string | null; category?: string | null; amount: number | string };
+type ReportProduct = { name: string; sku: string; quantity: number | string; cost_price: number | string; selling_price: number | string };
+type CRMRow = { id: string; name: string; phone?: string | null; email?: string | null; is_active: boolean; orders?: number; value?: number | string };
+type InvestmentRow = { name: string; sku: string; units: number | string; costValue: number | string; retailValue: number | string };
+
 const titles: Record<OperationsSection, { eyebrow: string; title: string; description: string }> = {
   payments: { eyebrow: 'Finance', title: 'Payments', description: 'Review collected, pending, and recorded sale payments.' },
   costs: { eyebrow: 'Finance', title: 'Operational Costs', description: 'Record and review business operating expenses.' },
@@ -32,6 +40,7 @@ export function OperationsPage({ section }: { section: OperationsSection }): Rea
   const [costAmount, setCostAmount] = useState('');
   const [costDate, setCostDate] = useState(new Date().toISOString().slice(0, 10));
   const [costDescription, setCostDescription] = useState('');
+  const [editingCostId, setEditingCostId] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ['operations', section],
@@ -45,6 +54,7 @@ export function OperationsPage({ section }: { section: OperationsSection }): Rea
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
         body: JSON.stringify({
+          costId: editingCostId || undefined,
           name: costName,
           category: costCategory,
           amount: Number(costAmount),
@@ -60,16 +70,17 @@ export function OperationsPage({ section }: { section: OperationsSection }): Rea
       setCostName('');
       setCostAmount('');
       setCostDescription('');
+      setEditingCostId(null);
       void queryClient.invalidateQueries({ queryKey: ['operations', 'costs'] });
     },
   });
 
   const content = useMemo(() => {
     if (!query.data) return null;
-    const data = query.data.data.data as any;
-    if (section === 'accounting') return <Accounting data={data} currency={currency} />;
-    if (section === 'payments') return <Payments data={data} currency={currency} />;
-    if (section === 'costs') return <Costs data={data} currency={currency} />;
+    const data = query.data.data.data as unknown;
+    if (section === 'accounting') return <Accounting data={data as AccountingData} currency={currency} />;
+    if (section === 'payments') return <Payments data={data as PaymentRow[]} currency={currency} />;
+    if (section === 'costs') return <Costs data={data} currency={currency} onEdit={(row: any) => { setEditingCostId(row.id); setCostName(row.description || row.label || ''); setCostCategory(row.expense_categories?.name || row.category || 'Miscellaneous'); setCostAmount(String(row.amount || 0)); setCostDate(row.expense_date || new Date().toISOString().slice(0, 10)); setCostDescription(row.notes || row.description || ''); }} />;
     if (section === 'reports') return <Reports data={data} currency={currency} />;
     if (section === 'crm') return <CRM data={data} currency={currency} />;
     return <Investments data={data} currency={currency} />;
@@ -90,7 +101,7 @@ export function OperationsPage({ section }: { section: OperationsSection }): Rea
           <TextField label="Description" value={costDescription} onChange={setCostDescription} placeholder="Optional" />
           <div className="md:col-span-5 flex justify-end">
             <Button disabled={createCost.isPending || !costName || !costAmount} className="bg-blue-600 text-white">
-              {createCost.isPending ? 'Adding...' : 'Add operating cost'}
+              {createCost.isPending ? 'Saving...' : editingCostId ? 'Save operating cost' : 'Add operating cost'}
             </Button>
           </div>
           {createCost.isError && <p className="md:col-span-5 text-sm text-rose-700">{createCost.error.message}</p>}
@@ -118,9 +129,9 @@ function Payments({ data, currency }: { data: any[]; currency: string }) {
   return <Table headers={['Receipt','Customer','Method','Reference','Amount','Status','Collected']} rows={data.map((row) => [row.sales?.receipt_number || '—',row.sales?.customers?.name || '—',row.payment_method,row.payment_reference || '—',money(row.amount,currency),row.status,row.collected_at ? new Date(row.collected_at).toLocaleString() : '—'])} />;
 }
 
-function Costs({ data, currency }: { data: { categories: any[]; costs: any[] }; currency: string }) {
+function Costs({ data, currency, onEdit }: { data: { categories: any[]; costs: any[] }; currency: string; onEdit: (row: any) => void }) {
   if (!data.costs.length) return <EmptyState title="No operational costs" description="Add the first operating expense above." />;
-  return <Table headers={['Date','Category','Description','Amount']} rows={data.costs.map((row) => [row.expense_date,row.expense_categories?.name || '—',row.description,row.amount != null ? money(row.amount,currency) : '—'])} />;
+  return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Date','Category','Description','Amount','Action'].map((header)=><th key={header} className="px-4 py-3">{header}</th>)}</tr></thead><tbody>{data.costs.map((row)=><tr key={row.id} className="border-t border-slate-100"><td className="px-4 py-3">{row.expense_date}</td><td className="px-4 py-3">{row.expense_categories?.name || '—'}</td><td className="px-4 py-3">{row.description}</td><td className="px-4 py-3">{money(row.amount,currency)}</td><td className="px-4 py-3"><button type="button" onClick={()=>onEdit(row)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700">Edit</button></td></tr>)}</tbody></table></div>;
 }
 
 function Reports({ data, currency }: { data: any; currency: string }) {
