@@ -107,9 +107,9 @@ const CommunicationsPage = lazy(() =>
     default: module.CommunicationsPage,
   })),
 );
-const PlaceholderPage = lazy(() =>
-  import('../features/shell/PlaceholderPage').then((module) => ({
-    default: module.PlaceholderPage,
+const OperationsPage = lazy(() =>
+  import('../features/shell/OperationsPage').then((module) => ({
+    default: module.OperationsPage,
   })),
 );
 const SettingsPage = lazy(() =>
@@ -128,9 +128,6 @@ function routeElement(element: ReactNode, label: string): ReactElement {
   return <Suspense fallback={<LoadingState label={label} />}>{element}</Suspense>;
 }
 
-function placeholderElement(): ReactElement {
-  return routeElement(<PlaceholderPage />, 'Loading workspace');
-}
 
 export const router = createBrowserRouter([
   { path: '/', element: <WelcomePage /> },
@@ -194,20 +191,20 @@ export const router = createBrowserRouter([
         path: 'packaging/:saleId/slip',
         element: routeElement(<PackingSlipPage />, 'Loading packing slip'),
       },
-      { path: 'payments', element: placeholderElement() },
+      { path: 'payments', element: routeElement(<OperationsPage section="payments" />, 'Loading payments') },
       { path: 'returns', element: routeElement(<ReturnsListPage />, 'Loading returns') },
       { path: 'returns/new', element: routeElement(<CreateReturnPage />, 'Loading return form') },
       { path: 'returns/:id', element: routeElement(<ReturnDetailPage />, 'Loading return') },
-      { path: 'costs', element: placeholderElement() },
-      { path: 'accounting', element: placeholderElement() },
-      { path: 'reports', element: placeholderElement() },
-      { path: 'reports/products', element: placeholderElement() },
+      { path: 'costs', element: routeElement(<OperationsPage section="costs" />, 'Loading operational costs') },
+      { path: 'accounting', element: routeElement(<OperationsPage section="accounting" />, 'Loading accounting') },
+      { path: 'reports', element: routeElement(<OperationsPage section="reports" />, 'Loading reports') },
+      { path: 'reports/products', element: routeElement(<OperationsPage section="investments" />, 'Loading product performance') },
       {
         path: 'communications',
         element: routeElement(<CommunicationsPage />, 'Loading communications'),
       },
-      { path: 'crm', element: placeholderElement() },
-      { path: 'investments', element: placeholderElement() },
+      { path: 'crm', element: routeElement(<OperationsPage section="crm" />, 'Loading CRM') },
+      { path: 'investments', element: routeElement(<OperationsPage section="investments" />, 'Loading investments') },
       {
         path: 'users',
         element: (

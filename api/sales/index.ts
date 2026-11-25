@@ -7,6 +7,7 @@ import { readJson, sendAuthFailure, methodNotAllowed } from '../lib/auth/http.js
 import { requirePermission } from '../lib/auth/authorization-context.js';
 import { requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
 import { permissions } from '../../src/lib/permissions/permission-registry.js';
+import { salePlacedSms, sendSaleNotification } from '../_lib/notifications.js';
 
 const itemSchema = z
   .object({ productId: z.string().uuid(), quantity: z.number().int().positive() })
@@ -203,7 +204,15 @@ export default async function sales(
       p_amount_paid: input.amountPaid,
       p_payment_reference: input.paymentReference || null,
       p_payment_note: input.paymentNote || null,
-      p_delivery_address_snapshot: input.deliveryAddressSnapshot || null,
+      p_delivery_address_snapshot: input.deliveryAddressSnapshot
+        ? {
+            address_line: input.deliveryAddressSnapshot.addressLine,
+            city: input.deliveryAddressSnapshot.city,
+            area: input.deliveryAddressSnapshot.area || null,
+            postal_code: input.deliveryAddressSnapshot.postalCode || null,
+            delivery_instructions: input.deliveryAddressSnapshot.deliveryInstructions || null,
+          }
+        : null,
       p_delivery_scheduled_at: input.deliveryScheduledAt || null,
       p_notes: input.notes || null,
       p_items: input.items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
@@ -239,6 +248,31 @@ export default async function sales(
         getRequestId(request),
       );
       return;
+    }
+    const saleData = rpc.data as Record<string, unknown>;
+    if (input.customerId) {
+      const customer = await context.client
+        .from('customers')
+        .select('name,phone')
+        .eq('organization_id', context.organization.id)
+        .eq('id', input.customerId)
+        .maybeSingle();
+      if (!customer.error && customer.data) {
+        await sendSaleNotification(
+          {
+            customerName: customer.data.name,
+            phone: customer.data.phone,
+            receiptNumber: String(saleData.receipt_number || ''),
+            totalAmount: Number(saleData.total_amount || 0),
+          },
+          salePlacedSms({
+            customerName: customer.data.name,
+            phone: customer.data.phone,
+            receiptNumber: String(saleData.receipt_number || ''),
+            totalAmount: Number(saleData.total_amount || 0),
+          }),
+        ).catch(() => undefined);
+      }
     }
     sendJson(
       response,

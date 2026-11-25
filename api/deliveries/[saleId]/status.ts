@@ -8,6 +8,7 @@ import { requirePermission } from '../../lib/auth/authorization-context.js';
 import { requireCsrf, requireSameOrigin } from '../../lib/auth/security.js';
 import { permissions } from '../../../src/lib/permissions/permission-registry.js';
 import { hasPermission } from '../../../src/lib/permissions/permission-utils.js';
+import { deliveryDeliveredSms, sendSaleNotification } from '../../_lib/notifications.js';
 const schema = z
   .object({
     status: z.enum(['out_for_delivery', 'delivered', 'failed', 'cancelled']),
@@ -66,6 +67,32 @@ export default async function status(
         getRequestId(request),
       );
       return;
+    }
+    if (input.status === 'delivered') {
+      const sale = await context.client
+        .from('sales')
+        .select('receipt_number,customers(name,phone)')
+        .eq('organization_id', context.organization.id)
+        .eq('id', saleId)
+        .maybeSingle();
+      const customerRelation = sale.data?.customers;
+      const customer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
+      if (!sale.error && sale.data && customer) {
+        await sendSaleNotification(
+          {
+            customerName: customer.name,
+            phone: customer.phone,
+            receiptNumber: sale.data.receipt_number,
+            totalAmount: 0,
+          },
+          deliveryDeliveredSms({
+            customerName: customer.name,
+            phone: customer.phone,
+            receiptNumber: sale.data.receipt_number,
+            totalAmount: 0,
+          }),
+        ).catch(() => undefined);
+      }
     }
     sendJson(
       response,

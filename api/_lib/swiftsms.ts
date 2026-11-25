@@ -98,7 +98,27 @@ export async function getSwiftSmsBalance(
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) throw new Error('SwiftSMS balance lookup failed');
-    const body = (await response.json()) as { available?: unknown; used?: unknown };
+    const raw = await response.text();
+    let decoded = raw;
+    try {
+      const outer = JSON.parse(raw);
+      if (typeof outer === 'string') decoded = outer;
+      if (outer && typeof outer === 'object') {
+        const object = outer as Record<string, unknown>;
+        if (object.available !== undefined) return {
+          available: Number(object.available),
+          used: Number(object.used),
+        };
+      }
+    } catch {
+      // SwiftSMS may return Python-style dict text instead of JSON.
+    }
+    const availableMatch = decoded.match(/available[^\d-]*(-?\d+(?:\.\d+)?)/i);
+    const usedMatch = decoded.match(/used[^\d-]*(-?\d+(?:\.\d+)?)/i);
+    const body: Record<string, unknown> = {
+      available: availableMatch?.[1],
+      used: usedMatch?.[1],
+    };
     const available = typeof body.available === 'number' ? body.available : Number(body.available);
     const used = typeof body.used === 'number' ? body.used : Number(body.used);
     if (!Number.isFinite(available) || !Number.isFinite(used) || available < 0 || used < 0)
@@ -150,7 +170,12 @@ export async function sendSwiftSms(
     try {
       parsed = JSON.parse(raw);
     } catch {
-      /* Provider returned non-JSON text; preserve a sanitized string. */
+      const providerObject: Record<string, unknown> = {};
+      const pairs = raw.matchAll(/['\"]([a-zA-Z0-9_]+)['\"]\s*[:=]\s*(?:['\"]([^'\"]*)['\"]|(-?\d+(?:\.\d+)?)|(True|False|None))/g);
+      for (const match of pairs) {
+        providerObject[match[1]] = match[2] ?? (match[3] ? Number(match[3]) : match[4] === 'True' ? true : match[4] === 'False' ? false : null);
+      }
+      parsed = Object.keys(providerObject).length ? providerObject : raw;
     }
     const sanitized = sanitizeProviderResponse(parsed);
     const object =

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { salePlacedSms, deliveryDeliveredSms, paymentReceivedSms } from '../../api/_lib/notifications';
 import {
   normalizeBangladeshPhone,
   estimateSmsSegments,
@@ -30,6 +31,12 @@ describe('communications provider safety', () => {
     expect(swiftSmsError('1005').retryable).toBe(true);
     expect(swiftSmsError('1007').retryable).toBe(false);
     expect(swiftSmsError('1012').message).toContain('Invalid Phone');
+  });
+
+  it('formats sale, delivery, and payment SMS exactly', () => {
+    expect(salePlacedSms({ customerName: 'ASHIK Mahmud', phone: '01712345678', receiptNumber: 'RCP-2026-628072615', totalAmount: 89 })).toBe('Dear ASHIK, your order has been placed. Rcpt: RCP-2026-628072615. Total: BDT 89.00. UNDERGRADUATE HUB');
+    expect(deliveryDeliveredSms({ customerName: 'ASHIK Mahmud', phone: '01712345678', receiptNumber: 'RCP-2026-628072615', totalAmount: 89 })).toBe('Dear ASHIK, your order RCP-2026-628072615 has been delivered successfully. Thank you. UNDERGRADUATE HUB');
+    expect(paymentReceivedSms({ customerName: 'ASHIK Mahmud', phone: '01712345678', receiptNumber: 'RCP-2026-628072615', totalAmount: 89, amount: 89 })).toBe('Dear ASHIK, payment of BDT 89.00 received for order RCP-2026-628072615. Thank you. UNDERGRADUATE HUB');
   });
 
   it('parses live balance JSON from a mocked provider', async () => {

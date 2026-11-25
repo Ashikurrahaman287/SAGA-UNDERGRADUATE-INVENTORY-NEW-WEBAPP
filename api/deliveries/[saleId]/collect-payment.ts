@@ -7,6 +7,7 @@ import { readJson, sendAuthFailure, methodNotAllowed } from '../../lib/auth/http
 import { requirePermission } from '../../lib/auth/authorization-context.js';
 import { requireCsrf, requireSameOrigin } from '../../lib/auth/security.js';
 import { permissions } from '../../../src/lib/permissions/permission-registry.js';
+import { paymentReceivedSms, sendSaleNotification } from '../../_lib/notifications.js';
 const schema = z
   .object({
     amount: z.coerce.number().finite().positive(),
@@ -71,6 +72,32 @@ export default async function collectPayment(
         getRequestId(request),
       );
       return;
+    }
+    const sale = await context.client
+      .from('sales')
+      .select('receipt_number,customers(name,phone)')
+      .eq('organization_id', context.organization.id)
+      .eq('id', saleId)
+      .maybeSingle();
+    const customerRelation = sale.data?.customers;
+    const customer = Array.isArray(customerRelation) ? customerRelation[0] : customerRelation;
+    if (!sale.error && sale.data && customer) {
+      await sendSaleNotification(
+        {
+          customerName: customer.name,
+          phone: customer.phone,
+          receiptNumber: sale.data.receipt_number,
+          totalAmount: 0,
+          amount: input.amount,
+        },
+        paymentReceivedSms({
+          customerName: customer.name,
+          phone: customer.phone,
+          receiptNumber: sale.data.receipt_number,
+          totalAmount: 0,
+          amount: input.amount,
+        }),
+      ).catch(() => undefined);
     }
     sendJson(
       response,

@@ -33,6 +33,7 @@ export function NewSalePage(): ReactElement {
   >('cash');
   const [amountPaid, setAmountPaid] = useState('0');
   const [paymentReference, setPaymentReference] = useState('');
+  const [paymentNote, setPaymentNote] = useState('');
   const [addressLine, setAddressLine] = useState('');
   const [addressCity, setAddressCity] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
@@ -143,6 +144,7 @@ export function NewSalePage(): ReactElement {
         paymentMethod,
         amountPaid: Number(amountPaid || 0),
         paymentReference: paymentReference || undefined,
+        paymentNote: paymentNote || undefined,
         deliveryAddressSnapshot:
           addressLine || addressCity
             ? { addressLine: addressLine || 'Pickup', city: addressCity || 'Local' }
@@ -171,6 +173,11 @@ export function NewSalePage(): ReactElement {
           setReceipt(null);
           setCart([]);
           setAmountPaid('0');
+          setPaymentReference('');
+          setPaymentNote('');
+          setAddressLine('');
+          setAddressCity('');
+          setScheduledAt('');
           setNotes('');
         }}
       />
@@ -191,7 +198,7 @@ export function NewSalePage(): ReactElement {
           {error}
         </p>
       )}
-      <div className="grid gap-5 xl:grid-cols-[1fr_0.9fr_1.1fr]">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_280px_minmax(320px,1.1fr)]">
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <PackageSearch size={18} className="text-blue-600" />
@@ -362,6 +369,15 @@ export function NewSalePage(): ReactElement {
             <input
               value={paymentReference}
               onChange={(event) => setPaymentReference(event.target.value)}
+              placeholder="Transaction or receipt reference"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+            />
+          </Field>
+          <Field label="Payment note">
+            <input
+              value={paymentNote}
+              onChange={(event) => setPaymentNote(event.target.value)}
+              placeholder="Optional payment note"
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             />
           </Field>

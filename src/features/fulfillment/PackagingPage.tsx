@@ -112,26 +112,32 @@ export function PackagingPage(): ReactElement {
                         Start packing
                       </Button>
                     )}
-                    <Button
-                      disabled={submitting || row.packaging_status === 'ready'}
-                      onClick={() =>
-                        void transition(
-                          row.sale_id,
-                          row.packaging_status === 'in_progress' ? 'packed' : 'ready',
-                        )
-                      }
-                      className="bg-blue-600 text-white"
-                    >
-                      {row.packaging_status === 'ready' ? (
-                        <>
-                          <CheckCircle2 size={16} className="mr-2" /> Ready
-                        </>
-                      ) : (
-                        <>
-                          <PackageCheck size={16} className="mr-2" /> Mark packed
-                        </>
-                      )}
-                    </Button>
+                    {row.packaging_status === 'in_progress' && (
+                      <Button
+                        disabled={submitting}
+                        onClick={() => void transition(row.sale_id, 'packed')}
+                        className="bg-blue-600 text-white"
+                      >
+                        <PackageCheck size={16} className="mr-2" /> Mark packed
+                      </Button>
+                    )}
+                    {row.packaging_status === 'packed' && (
+                      <Button
+                        disabled={submitting}
+                        onClick={() => void transition(row.sale_id, 'ready')}
+                        className="bg-blue-600 text-white"
+                      >
+                        <CheckCircle2 size={16} className="mr-2" /> Mark ready
+                      </Button>
+                    )}
+                    {row.packaging_status === 'ready' && (
+                      <Button
+                        disabled
+                        className="border border-emerald-200 bg-emerald-50 text-emerald-700"
+                      >
+                        <CheckCircle2 size={16} className="mr-2" /> Ready
+                      </Button>
+                    )}
                     <a
                       href={`/app/sales/${row.sale_id}/receipt`}
                       className="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700"

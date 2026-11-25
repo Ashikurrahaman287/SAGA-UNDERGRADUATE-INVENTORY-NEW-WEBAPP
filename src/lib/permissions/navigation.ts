@@ -99,20 +99,20 @@ export const navigationGroups: readonly NavigationGroup[] = [
   {
     label: 'Finance',
     items: [
-      item('Payments', '/app/payments', permissions.paymentsView, CreditCard),
+      { ...item('Payments', '/app/payments', permissions.paymentsView, CreditCard), implemented: true },
       {
         ...item('Returns & Refunds', '/app/returns', permissions.returnsView, Receipt),
         implemented: true,
       },
-      item('Operational Costs', '/app/costs', permissions.accountingManage, HandCoins),
-      item('Accounting', '/app/accounting', permissions.accountingView, FileBarChart),
+      { ...item('Operational Costs', '/app/costs', permissions.accountingManage, HandCoins), implemented: true },
+      { ...item('Accounting', '/app/accounting', permissions.accountingView, FileBarChart), implemented: true },
     ],
   },
   {
     label: 'Business Intelligence',
     items: [
-      item('Reports', '/app/reports', permissions.reportsView, BarChart3),
-      item('Product Performance', '/app/reports/products', permissions.reportsView, BarChart3),
+      { ...item('Reports', '/app/reports', permissions.reportsView, BarChart3), implemented: true },
+      { ...item('Product Performance', '/app/reports/products', permissions.reportsView, BarChart3), implemented: true },
     ],
   },
   {
@@ -127,8 +127,8 @@ export const navigationGroups: readonly NavigationGroup[] = [
   {
     label: 'Management',
     items: [
-      item('CRM & Loyalty', '/app/crm', permissions.crmView, Users),
-      item('Investments', '/app/investments', permissions.investmentsView, HandCoins),
+      { ...item('CRM & Loyalty', '/app/crm', permissions.crmView, Users), implemented: true },
+      { ...item('Investments', '/app/investments', permissions.investmentsView, HandCoins), implemented: true },
       { ...item('User Management', '/app/users', permissions.usersView, Users), implemented: true },
       { ...item('Settings', '/app/settings', permissions.settingsView, Settings), implemented: true },
       { ...item('Audit Logs', '/app/audit-logs', permissions.auditLogsView, ClipboardList), implemented: true },
