@@ -1,4 +1,13 @@
+import nodemailer from 'nodemailer';
+import { getServerEnv } from '../lib/env.js';
+
 export type EmailItem = { name: string; sku: string; quantity: number; unitPrice: number; lineTotal: number };
+export type EmailConsentStatus = 'granted' | 'denied' | 'unknown' | null | undefined;
+
+export function canSendTransactionalEmail(consentStatus: EmailConsentStatus): boolean {
+  return consentStatus !== 'denied';
+}
+
 export type OrderEmailData = {
   customerName: string;
   receiptNumber: string;
@@ -41,11 +50,41 @@ export function renderOrderEmail(data: OrderEmailData): string {
 }
 
 export async function sendEmail(params: { to: string; subject: string; html: string; text: string }): Promise<{ sent: boolean; provider: string; messageId?: string; error?: string }> {
-  const provider = process.env.EMAIL_PROVIDER || 'none';
-  const apiKey = process.env.EMAIL_API_KEY;
-  const from = process.env.EMAIL_FROM_ADDRESS;
-  if (!from || !apiKey || provider === 'none') return { sent: false, provider, error: 'Email provider is not configured.' };
+  let provider = process.env.EMAIL_PROVIDER || 'none';
   try {
+    const env = getServerEnv();
+    provider = env.EMAIL_PROVIDER || 'none';
+    const from = env.EMAIL_FROM_ADDRESS;
+    if (!from) return { sent: false, provider, error: 'Email sender address is not configured.' };
+
+    if (provider === 'smtp') {
+      if (!env.EMAIL_SMTP_HOST || !env.EMAIL_SMTP_USER || !env.EMAIL_SMTP_PASSWORD) {
+        return { sent: false, provider, error: 'SMTP is selected but app-server SMTP settings are incomplete.' };
+      }
+      const port = env.EMAIL_SMTP_PORT || 587;
+      const transport = nodemailer.createTransport({
+        host: env.EMAIL_SMTP_HOST,
+        port,
+        secure: port === 465,
+        auth: { user: env.EMAIL_SMTP_USER, pass: env.EMAIL_SMTP_PASSWORD },
+        connectionTimeout: 15000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
+      });
+      const result = await transport.sendMail({
+        from,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+        text: params.text,
+      });
+      return { sent: true, provider, messageId: result.messageId };
+    }
+
+    const apiKey = env.EMAIL_API_KEY;
+    if (!apiKey || provider === 'none') {
+      return { sent: false, provider, error: 'Email provider is not configured.' };
+    }
     let url = '';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     let body: Record<string, unknown>;

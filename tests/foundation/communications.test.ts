@@ -1,5 +1,15 @@
+const smtpMock = vi.hoisted(() => ({
+  createTransport: vi.fn(),
+  sendMail: vi.fn(),
+}));
+
+vi.mock('nodemailer', () => ({
+  default: { createTransport: smtpMock.createTransport },
+}));
+
 import { describe, expect, it, vi } from 'vitest';
 import { salePlacedSms, deliveryDeliveredSms, paymentReceivedSms } from '../../api/_lib/notifications';
+import { canSendTransactionalEmail, sendEmail } from '../../api/_lib/email';
 import {
   normalizeBangladeshPhone,
   estimateSmsSegments,
@@ -10,6 +20,43 @@ import {
 } from '../../api/_lib/swiftsms';
 
 describe('communications provider safety', () => {
+
+  it('allows transactional reminders unless the customer explicitly opted out', () => {
+    expect(canSendTransactionalEmail('granted')).toBe(true);
+    expect(canSendTransactionalEmail('unknown')).toBe(true);
+    expect(canSendTransactionalEmail(null)).toBe(true);
+    expect(canSendTransactionalEmail(undefined)).toBe(true);
+    expect(canSendTransactionalEmail('denied')).toBe(false);
+  });
+
+  it('sends application email through configured SMTP', async () => {
+    vi.stubEnv('EMAIL_PROVIDER', 'smtp');
+    vi.stubEnv('EMAIL_SMTP_HOST', 'smtp.example.test');
+    vi.stubEnv('EMAIL_SMTP_PORT', '587');
+    vi.stubEnv('EMAIL_SMTP_USER', 'mailer@example.test');
+    vi.stubEnv('EMAIL_SMTP_PASSWORD', 'test-password');
+    vi.stubEnv('EMAIL_FROM_ADDRESS', 'orders@example.test');
+    smtpMock.createTransport.mockReturnValue({ sendMail: smtpMock.sendMail });
+    smtpMock.sendMail.mockResolvedValue({ messageId: 'message-123' });
+
+    await expect(sendEmail({
+      to: 'customer@example.test',
+      subject: 'Delivery reminder',
+      html: '<p>Reminder</p>',
+      text: 'Reminder',
+    })).resolves.toEqual({ sent: true, provider: 'smtp', messageId: 'message-123' });
+    expect(smtpMock.createTransport).toHaveBeenCalledWith(expect.objectContaining({
+      host: 'smtp.example.test',
+      port: 587,
+      secure: false,
+    }));
+    expect(smtpMock.sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      from: 'orders@example.test',
+      to: 'customer@example.test',
+      subject: 'Delivery reminder',
+    }));
+    vi.unstubAllEnvs();
+  });
 
   it('normalizes Bangladeshi phone numbers', () => {
     expect(normalizeBangladeshPhone('+8801712345678')).toBe('01712345678');

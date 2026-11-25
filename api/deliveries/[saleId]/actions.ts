@@ -6,7 +6,7 @@ import { readJson, sendAuthFailure, methodNotAllowed } from '../../lib/auth/http
 import { requirePermission } from '../../lib/auth/authorization-context.js';
 import { requireCsrf, requireSameOrigin } from '../../lib/auth/security.js';
 import { permissions } from '../../../src/lib/permissions/permission-registry.js';
-import { renderOrderEmail, sendEmail } from '../../_lib/email.js';
+import { canSendTransactionalEmail, renderOrderEmail, sendEmail } from '../../_lib/email.js';
 
 export default async function deliveryActions(request: VercelRequest, response: VercelResponse): Promise<void> {
   if (methodNotAllowed(request, response, 'POST')) return;
@@ -86,8 +86,8 @@ export default async function deliveryActions(request: VercelRequest, response: 
       .eq('channel', 'email')
       .maybeSingle();
     if (consent.error) throw consent.error;
-    if (consent.data?.consent_status !== 'granted') {
-      sendJson(response, 403, { error: { code: 'EMAIL_CONSENT_REQUIRED', message: 'Customer email consent is not granted.' }, requestId: getRequestId(request) }, getRequestId(request));
+    if (!canSendTransactionalEmail(consent.data?.consent_status)) {
+      sendJson(response, 403, { error: { code: 'EMAIL_CONSENT_DENIED', message: 'Customer has opted out of email communications.' }, requestId: getRequestId(request) }, getRequestId(request));
       return;
     }
 

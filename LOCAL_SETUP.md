@@ -68,6 +68,10 @@ SWIFTSMS_API_KEY=
 SWIFTSMS_BASE_URL=https://swiftsms.astgd.com
 EMAIL_PROVIDER=none
 EMAIL_API_KEY=
+EMAIL_SMTP_HOST=
+EMAIL_SMTP_PORT=587
+EMAIL_SMTP_USER=
+EMAIL_SMTP_PASSWORD=
 EMAIL_FROM_ADDRESS=
 
 ADMIN_PASSWORD=
@@ -76,6 +80,7 @@ RIDER_PASSWORD=
 ```
 
 Never place `SUPABASE_SERVICE_ROLE_KEY`, SwiftSMS credentials, email credentials, or role passwords in a `VITE_*` variable.
+For application email through SMTP, set `EMAIL_PROVIDER=smtp` and provide the SMTP host, port, user, password, and sender address as server-only variables. Supabase Auth's SMTP settings do not automatically configure application reminder email.
 
 ### Link Supabase Cloud
 

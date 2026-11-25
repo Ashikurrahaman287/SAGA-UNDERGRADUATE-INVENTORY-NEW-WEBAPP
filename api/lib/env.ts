@@ -9,6 +9,10 @@ const serverEnvSchema = z.object({
   SWIFTSMS_BASE_URL: z.string().url().optional(),
   EMAIL_PROVIDER: z.enum(['none', 'smtp', 'resend', 'postmark', 'sendgrid']).optional(),
   EMAIL_API_KEY: z.string().min(1).optional(),
+  EMAIL_SMTP_HOST: z.string().min(1).optional(),
+  EMAIL_SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  EMAIL_SMTP_USER: z.string().min(1).optional(),
+  EMAIL_SMTP_PASSWORD: z.string().min(1).optional(),
   EMAIL_FROM_ADDRESS: z.string().email().optional(),
 });
 
@@ -24,6 +28,10 @@ export function getServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv
     SWIFTSMS_BASE_URL: source.SWIFTSMS_BASE_URL || undefined,
     EMAIL_PROVIDER: source.EMAIL_PROVIDER || undefined,
     EMAIL_API_KEY: source.EMAIL_API_KEY || undefined,
+    EMAIL_SMTP_HOST: source.EMAIL_SMTP_HOST || undefined,
+    EMAIL_SMTP_PORT: source.EMAIL_SMTP_PORT || undefined,
+    EMAIL_SMTP_USER: source.EMAIL_SMTP_USER || undefined,
+    EMAIL_SMTP_PASSWORD: source.EMAIL_SMTP_PASSWORD || undefined,
     EMAIL_FROM_ADDRESS: source.EMAIL_FROM_ADDRESS || undefined,
   });
 }
@@ -38,6 +46,10 @@ export function isServerConfigurationReady(source: NodeJS.ProcessEnv = process.e
     SWIFTSMS_BASE_URL: source.SWIFTSMS_BASE_URL || undefined,
     EMAIL_PROVIDER: source.EMAIL_PROVIDER || undefined,
     EMAIL_API_KEY: source.EMAIL_API_KEY || undefined,
+    EMAIL_SMTP_HOST: source.EMAIL_SMTP_HOST || undefined,
+    EMAIL_SMTP_PORT: source.EMAIL_SMTP_PORT || undefined,
+    EMAIL_SMTP_USER: source.EMAIL_SMTP_USER || undefined,
+    EMAIL_SMTP_PASSWORD: source.EMAIL_SMTP_PASSWORD || undefined,
     EMAIL_FROM_ADDRESS: source.EMAIL_FROM_ADDRESS || undefined,
   });
   return Boolean(
