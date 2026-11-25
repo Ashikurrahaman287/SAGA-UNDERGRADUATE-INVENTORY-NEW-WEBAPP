@@ -80,10 +80,10 @@ export function OperationsPage({ section }: { section: OperationsSection }): Rea
     const data = query.data.data.data as unknown;
     if (section === 'accounting') return <Accounting data={data as AccountingData} currency={currency} />;
     if (section === 'payments') return <Payments data={data as PaymentRow[]} currency={currency} />;
-    if (section === 'costs') return <Costs data={data} currency={currency} onEdit={(row: any) => { setEditingCostId(row.id); setCostName(row.description || row.label || ''); setCostCategory(row.expense_categories?.name || row.category || 'Miscellaneous'); setCostAmount(String(row.amount || 0)); setCostDate(row.expense_date || new Date().toISOString().slice(0, 10)); setCostDescription(row.notes || row.description || ''); }} />;
-    if (section === 'reports') return <Reports data={data} currency={currency} />;
-    if (section === 'crm') return <CRM data={data} currency={currency} />;
-    return <Investments data={data} currency={currency} />;
+    if (section === 'costs') return <Costs data={data as { categories: CostCategory[]; costs: CostRow[] }} currency={currency} onEdit={(row: CostRow) => { setEditingCostId(row.id); setCostName(row.description || row.label || ''); setCostCategory(row.expense_categories?.name || row.category || 'Miscellaneous'); setCostAmount(String(row.amount || 0)); setCostDate(row.expense_date || new Date().toISOString().slice(0, 10)); setCostDescription(row.notes || row.description || ''); }} />;
+    if (section === 'reports') return <Reports data={data as { sales: Array<{ total_amount: number | string }>; products: ReportProduct[]; customerCount: number }} currency={currency} />;
+    if (section === 'crm') return <CRM data={data as CRMRow[]} currency={currency} />;
+    return <Investments data={data as InvestmentRow[]} currency={currency} />;
   }, [query.data, section, currency]);
 
   return (
@@ -120,31 +120,31 @@ function Metric({ label, value }: { label: string; value: string }): ReactElemen
   return <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase text-slate-500">{label}</p><p className="mt-2 text-xl font-bold text-slate-950">{value}</p></div>;
 }
 
-function Accounting({ data, currency }: { data: any; currency: string }) {
+function Accounting({ data, currency }: { data: AccountingData; currency: string }) {
   return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"><Metric label="Revenue" value={money(data.revenue,currency)} /><Metric label="Collected" value={money(data.collected,currency)} /><Metric label="Expenses" value={money(data.expenses,currency)} /><Metric label="Refunded" value={money(data.refunded,currency)} /><Metric label="Outstanding" value={money(data.outstanding,currency)} /><Metric label="Net cash" value={money(data.net,currency)} /></div>;
 }
 
-function Payments({ data, currency }: { data: any[]; currency: string }) {
+function Payments({ data, currency }: { data: PaymentRow[]; currency: string }) {
   if (!data.length) return <EmptyState title="No payments" description="Payments recorded with sales will appear here." />;
   return <Table headers={['Receipt','Customer','Method','Reference','Amount','Status','Collected']} rows={data.map((row) => [row.sales?.receipt_number || '—',row.sales?.customers?.name || '—',row.payment_method,row.payment_reference || '—',money(row.amount,currency),row.status,row.collected_at ? new Date(row.collected_at).toLocaleString() : '—'])} />;
 }
 
-function Costs({ data, currency, onEdit }: { data: { categories: any[]; costs: any[] }; currency: string; onEdit: (row: any) => void }) {
+function Costs({ data, currency, onEdit }: { data: { categories: CostCategory[]; costs: CostRow[] }; currency: string; onEdit: (row: CostRow) => void }) {
   if (!data.costs.length) return <EmptyState title="No operational costs" description="Add the first operating expense above." />;
   return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Date','Category','Description','Amount','Action'].map((header)=><th key={header} className="px-4 py-3">{header}</th>)}</tr></thead><tbody>{data.costs.map((row)=><tr key={row.id} className="border-t border-slate-100"><td className="px-4 py-3">{row.expense_date}</td><td className="px-4 py-3">{row.expense_categories?.name || '—'}</td><td className="px-4 py-3">{row.description}</td><td className="px-4 py-3">{money(row.amount,currency)}</td><td className="px-4 py-3"><button type="button" onClick={()=>onEdit(row)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700">Edit</button></td></tr>)}</tbody></table></div>;
 }
 
-function Reports({ data, currency }: { data: any; currency: string }) {
-  const salesValue=(data.sales||[]).reduce((t:number,r:any)=>t+Number(r.total_amount||0),0);
-  return <><div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Sales" value={String(data.sales?.length||0)} /><Metric label="Sales value" value={money(salesValue,currency)} /><Metric label="Customers" value={String(data.customerCount||0)} /><Metric label="Inventory retail value" value={money(data.inventoryRetail,currency)} /></div><Table headers={['Product','SKU','Stock','Cost value','Retail value']} rows={(data.products||[]).map((row:any)=>[row.name,row.sku,row.quantity,money(Number(row.quantity||0)*Number(row.cost_price||0),currency),money(Number(row.quantity||0)*Number(row.selling_price||0),currency)])} /></>;
+function Reports({ data, currency }: { data: { sales: Array<{ total_amount: number | string }>; products: ReportProduct[]; customerCount: number }; currency: string }) {
+  const salesValue=(data.sales||[]).reduce((t:number,r)=>t+Number(r.total_amount||0),0);
+  return <><div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Sales" value={String(data.sales?.length||0)} /><Metric label="Sales value" value={money(salesValue,currency)} /><Metric label="Customers" value={String(data.customerCount||0)} /><Metric label="Inventory retail value" value={money(data.inventoryRetail,currency)} /></div><Table headers={['Product','SKU','Stock','Cost value','Retail value']} rows={(data.products||[]).map((row)=>[row.name,row.sku,row.quantity,money(Number(row.quantity||0)*Number(row.cost_price||0),currency),money(Number(row.quantity||0)*Number(row.selling_price||0),currency)])} /></>;
 }
 
-function CRM({ data, currency }: { data: any[]; currency: string }) {
+function CRM({ data, currency }: { data: CRMRow[]; currency: string }) {
   if (!data.length) return <EmptyState title="No customers" description="Customer relationships will appear after records are added." />;
   return <Table headers={['Customer','Phone','Email','Orders','Purchase value','Status']} rows={data.map((row)=>[row.name,row.phone||'—',row.email||'—',row.orders||0,money(row.value||0,currency),row.is_active?'Active':'Inactive'])} />;
 }
 
-function Investments({ data, currency }: { data: any[]; currency: string }) {
+function Investments({ data, currency }: { data: InvestmentRow[]; currency: string }) {
   const cost=data.reduce((t,r)=>t+Number(r.costValue||0),0);
   const retail=data.reduce((t,r)=>t+Number(r.retailValue||0),0);
   return <><div className="mb-5 grid gap-4 sm:grid-cols-2"><Metric label="Inventory at cost" value={money(cost,currency)} /><Metric label="Inventory at retail" value={money(retail,currency)} /></div><Table headers={['Asset / Product','SKU','Units','Cost value','Retail value']} rows={data.map((row)=>[row.name,row.sku,row.units,money(row.costValue,currency),money(row.retailValue,currency)])} /></>;
