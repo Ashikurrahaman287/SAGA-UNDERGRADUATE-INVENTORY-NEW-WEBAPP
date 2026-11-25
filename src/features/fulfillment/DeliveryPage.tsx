@@ -114,15 +114,6 @@ export function DeliveryPage(): ReactElement {
         >
           <RefreshCw size={16} className="mr-2" /> Refresh
         </Button>
-        {auth.session?.role === 'admin' && (
-          <Button
-            disabled={submitting}
-            onClick={() => void markAllDelivered()}
-            className="bg-emerald-700 text-white"
-          >
-            <CheckCheck size={16} className="mr-2" /> Mark all delivered
-          </Button>
-        )}
       </div>
       {error && (
         <p role="alert" className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">

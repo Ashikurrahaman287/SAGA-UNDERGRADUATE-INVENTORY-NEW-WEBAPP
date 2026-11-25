@@ -30,6 +30,11 @@ export default async function deliveryDone(request: VercelRequest, response: Ver
       return;
     }
 
+    if (sale.data.payment_status === 'paid' && sale.data.fulfillment_status === 'delivered') {
+      sendJson(response, 200, { data: { delivered: true, duePaid: 0, amountPaid: Number(sale.data.confirmed_paid_amount ?? sale.data.amount_paid ?? 0), idempotent: true }, requestId: getRequestId(request) }, getRequestId(request));
+      return;
+    }
+
     const due = Math.max(Number(sale.data.amount_due || 0), 0);
     const confirmedPaid = due > 0
       ? Number(sale.data.confirmed_paid_amount ?? sale.data.amount_paid ?? 0) + due
