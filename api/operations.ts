@@ -59,11 +59,10 @@ export default async function operations(request: VercelRequest, response: Verce
           category: input.category,
           notes: input.description || null,
           created_by: context.auth.user.id,
-          updated_by: context.auth.user.id,
       };
       const costResult = input.costId
-        ? await context.client.from('operational_costs').update(costPayload).eq('organization_id', context.organization.id).eq('id', input.costId).select('id,amount,description,expense_date,created_at').single()
-        : await context.client.from('operational_costs').insert(costPayload).select('id,amount,description,expense_date,created_at').single();
+        ? await context.client.from('operational_costs').update(costPayload).eq('organization_id', context.organization.id).eq('id', input.costId).select('id,amount,description,expense_date,created_at,label,category,notes').single()
+        : await context.client.from('operational_costs').insert(costPayload).select('id,amount,description,expense_date,created_at,label,category,notes').single();
       if (costResult.error) throw costResult.error;
       await context.client.from('audit_logs').insert({
         organization_id: context.organization.id,
@@ -93,7 +92,7 @@ export default async function operations(request: VercelRequest, response: Verce
     if (section === 'costs') {
       const [categories, costs] = await Promise.all([
         context.client.from('expense_categories').select('id,name,is_active').eq('organization_id', context.organization.id).order('name'),
-        context.client.from('operational_costs').select('id,amount,description,expense_date,created_at,expense_categories(name)').eq('organization_id', context.organization.id).order('expense_date', { ascending: false }).limit(250),
+        context.client.from('operational_costs').select('id,amount,description,expense_date,created_at,label,category,notes,expense_categories(name)').eq('organization_id', context.organization.id).order('expense_date', { ascending: false }).limit(250),
       ]);
       if (categories.error) throw categories.error;
       if (costs.error) throw costs.error;

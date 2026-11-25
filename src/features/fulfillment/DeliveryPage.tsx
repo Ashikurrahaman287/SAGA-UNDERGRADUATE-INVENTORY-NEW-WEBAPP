@@ -79,24 +79,6 @@ export function DeliveryPage(): ReactElement {
     setError('Delivery details copied.');
   }
 
-  async function markAllDelivered(): Promise<void> {
-    setSubmitting(true);
-    setError('');
-    const response = await fetch('/api/deliveries/mark-all-delivered', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': auth.csrfToken },
-    });
-    if (!response.ok) {
-      const body = (await response.json()) as { error?: { message?: string } };
-      setError(body.error?.message || 'Deliveries could not be completed.');
-    } else {
-      const body = (await response.json()) as { data: { marked: number; skipped: number } };
-      setError(body.data.skipped ? `${body.data.marked} delivered; ${body.data.skipped} skipped.` : `${body.data.marked} delivery(ies) marked delivered.`);
-      await deliveries.refetch();
-    }
-    setSubmitting(false);
-  }
   const rows = deliveries.data?.data.data || [];
   return (
     <PageContainer>

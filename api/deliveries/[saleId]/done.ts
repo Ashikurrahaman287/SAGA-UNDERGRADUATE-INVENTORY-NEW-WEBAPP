@@ -20,7 +20,7 @@ export default async function deliveryDone(request: VercelRequest, response: Ver
 
     const sale = await context.client
       .from('sales')
-      .select('id,receipt_number,total_amount,confirmed_paid_amount,amount_paid,amount_due,payment_status,customers(name,phone)')
+      .select('id,receipt_number,total_amount,confirmed_paid_amount,amount_paid,amount_due,payment_status,fulfillment_status,customers(name,phone)')
       .eq('organization_id', context.organization.id)
       .eq('id', saleId)
       .maybeSingle();
