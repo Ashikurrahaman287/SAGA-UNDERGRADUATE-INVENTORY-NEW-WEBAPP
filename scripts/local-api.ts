@@ -23,30 +23,34 @@ function findTsFiles(directory: string): string[] {
   });
 }
 
-const routes: Route[] = findTsFiles(apiRoot).flatMap((modulePath) => {
-  const relative = path.relative(apiRoot, modulePath).replaceAll(path.sep, '/');
-  let routePath = relative.replace(/\.ts$/, '');
-  if (routePath.endsWith('/index')) routePath = routePath.slice(0, -'/index'.length);
-  if (!routePath) return [];
+function buildRoutes(): Route[] {
+  return findTsFiles(apiRoot).flatMap((modulePath) => {
+    const relative = path.relative(apiRoot, modulePath).replaceAll(path.sep, '/');
+    let routePath = relative.replace(/\.ts$/, '');
+    if (routePath.endsWith('/index')) routePath = routePath.slice(0, -'/index'.length);
+    if (!routePath) return [];
 
-  const keys: string[] = [];
-  const patternSource = routePath
-    .split('/')
-    .map((segment) => {
-      if (segment.startsWith('[') && segment.endsWith(']')) {
-        keys.push(segment.slice(1, -1));
-        return '([^/]+)';
-      }
-      return segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    })
-    .join('/');
+    const keys: string[] = [];
+    const patternSource = routePath
+      .split('/')
+      .map((segment) => {
+        if (segment.startsWith('[') && segment.endsWith(']')) {
+          keys.push(segment.slice(1, -1));
+          return '([^/]+)';
+        }
+        return segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      })
+      .join('/');
 
-  return [{
-    pattern: new RegExp(`^/api/${patternSource}/?$`),
-    keys,
-    modulePath,
-  }];
-});
+    return [{
+      pattern: new RegExp(`^/api/${patternSource}/?$`),
+      keys,
+      modulePath,
+    }];
+  });
+}
+
+let routes = buildRoutes();
 
 function parseCookies(header: string | undefined): Record<string, string> {
   const cookies: Record<string, string> = {};
@@ -63,7 +67,11 @@ function parseCookies(header: string | undefined): Record<string, string> {
 const server = http.createServer(async (incoming, outgoing) => {
   try {
     const url = new URL(incoming.url || '/', 'http://localhost:3000');
-    const route = routes.find((candidate) => candidate.pattern.test(url.pathname));
+    let route = routes.find((candidate) => candidate.pattern.test(url.pathname));
+    if (!route) {
+      routes = buildRoutes();
+      route = routes.find((candidate) => candidate.pattern.test(url.pathname));
+    }
 
     if (!route) {
       outgoing.statusCode = 404;

@@ -22,6 +22,17 @@ export type AuthContext = {
   };
 };
 
+function isUnauthenticatedSessionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : '';
+  return (
+    error.name === 'AuthSessionMissingError' ||
+    code === 'refresh_token_not_found' ||
+    code === 'refresh_token_already_used' ||
+    /invalid refresh token/i.test(error.message)
+  );
+}
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 export function createAuthClient(request: VercelRequest, response: VercelResponse) {
@@ -86,9 +97,22 @@ export async function getAuthContext(
   commit: () => void;
 }> {
   const auth = createAuthClient(request, response);
-  const {
-    data: { user },
-  } = await auth.client.auth.getUser();
+  let authResult: Awaited<ReturnType<typeof auth.client.auth.getUser>>;
+  try {
+    authResult = await auth.client.auth.getUser();
+  } catch (error) {
+    if (!isUnauthenticatedSessionError(error)) throw error;
+    auth.commit();
+    clearAuthCookies(request, response);
+    return { client: auth.client, context: null, commit: auth.commit };
+  }
+  if (authResult.error) {
+    if (!isUnauthenticatedSessionError(authResult.error)) throw authResult.error;
+    auth.commit();
+    clearAuthCookies(request, response);
+    return { client: auth.client, context: null, commit: auth.commit };
+  }
+  const user = authResult.data.user;
   if (!user) {
     auth.commit();
     return { client: auth.client, context: null, commit: auth.commit };

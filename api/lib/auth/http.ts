@@ -45,11 +45,15 @@ export function sendAuthFailure(
     sendError(response, 400, 'INVALID_REQUEST', 'The request could not be processed.', requestId);
     return;
   }
+  if (process.env.NODE_ENV !== 'production') {
+    const details = error instanceof Error ? `${error.name}: ${error.message}` : error;
+    console.error(`[api] ${requestId} request failed`, details);
+  }
   sendError(
     response,
     500,
-    'AUTHENTICATION_ERROR',
-    'The authentication service is temporarily unavailable.',
+    'REQUEST_FAILED',
+    'The request could not be completed. Please try again.',
     requestId,
   );
 }
