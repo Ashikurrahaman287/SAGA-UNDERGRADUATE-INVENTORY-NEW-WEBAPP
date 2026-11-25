@@ -81,7 +81,7 @@ export function OperationsPage({ section }: { section: OperationsSection }): Rea
     if (section === 'accounting') return <Accounting data={data as AccountingData} currency={currency} />;
     if (section === 'payments') return <Payments data={data as PaymentRow[]} currency={currency} />;
     if (section === 'costs') return <Costs data={data as { categories: CostCategory[]; costs: CostRow[] }} currency={currency} onEdit={(row: CostRow) => { setEditingCostId(row.id); setCostName(row.description || row.label || ''); setCostCategory(row.expense_categories?.name || row.category || 'Miscellaneous'); setCostAmount(String(row.amount || 0)); setCostDate(row.expense_date || new Date().toISOString().slice(0, 10)); setCostDescription(row.notes || row.description || ''); }} />;
-    if (section === 'reports') return <Reports data={data as { sales: Array<{ total_amount: number | string }>; products: ReportProduct[]; customerCount: number }} currency={currency} />;
+    if (section === 'reports') return <Reports data={data as { sales: Array<{ total_amount: number | string }>; products: ReportProduct[]; customerCount: number; inventoryCost: number | string; inventoryRetail: number | string }} currency={currency} />;
     if (section === 'crm') return <CRM data={data as CRMRow[]} currency={currency} />;
     return <Investments data={data as InvestmentRow[]} currency={currency} />;
   }, [query.data, section, currency]);
@@ -134,7 +134,7 @@ function Costs({ data, currency, onEdit }: { data: { categories: CostCategory[];
   return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"><table className="min-w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Date','Category','Description','Amount','Action'].map((header)=><th key={header} className="px-4 py-3">{header}</th>)}</tr></thead><tbody>{data.costs.map((row)=><tr key={row.id} className="border-t border-slate-100"><td className="px-4 py-3">{row.expense_date}</td><td className="px-4 py-3">{row.expense_categories?.name || '—'}</td><td className="px-4 py-3">{row.description}</td><td className="px-4 py-3">{money(row.amount,currency)}</td><td className="px-4 py-3"><button type="button" onClick={()=>onEdit(row)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700">Edit</button></td></tr>)}</tbody></table></div>;
 }
 
-function Reports({ data, currency }: { data: { sales: Array<{ total_amount: number | string }>; products: ReportProduct[]; customerCount: number }; currency: string }) {
+function Reports({ data, currency }: { data: { sales: Array<{ total_amount: number | string }>; products: ReportProduct[]; customerCount: number; inventoryCost: number | string; inventoryRetail: number | string }; currency: string }) {
   const salesValue=(data.sales||[]).reduce((t:number,r)=>t+Number(r.total_amount||0),0);
   return <><div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Sales" value={String(data.sales?.length||0)} /><Metric label="Sales value" value={money(salesValue,currency)} /><Metric label="Customers" value={String(data.customerCount||0)} /><Metric label="Inventory retail value" value={money(data.inventoryRetail,currency)} /></div><Table headers={['Product','SKU','Stock','Cost value','Retail value']} rows={(data.products||[]).map((row)=>[row.name,row.sku,row.quantity,money(Number(row.quantity||0)*Number(row.cost_price||0),currency),money(Number(row.quantity||0)*Number(row.selling_price||0),currency)])} /></>;
 }
