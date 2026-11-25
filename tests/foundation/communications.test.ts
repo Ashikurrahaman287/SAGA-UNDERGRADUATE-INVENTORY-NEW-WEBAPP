@@ -35,6 +35,7 @@ describe('communications provider safety', () => {
     vi.stubEnv('EMAIL_SMTP_PORT', '587');
     vi.stubEnv('EMAIL_SMTP_USER', 'mailer@example.test');
     vi.stubEnv('EMAIL_SMTP_PASSWORD', 'test-password');
+    vi.stubEnv('EMAIL_FROM_NAME', 'UNDERGRADUATE HUB');
     vi.stubEnv('EMAIL_FROM_ADDRESS', 'orders@example.test');
     smtpMock.createTransport.mockReturnValue({ sendMail: smtpMock.sendMail });
     smtpMock.sendMail.mockResolvedValue({ messageId: 'message-123' });
@@ -51,7 +52,7 @@ describe('communications provider safety', () => {
       secure: false,
     }));
     expect(smtpMock.sendMail).toHaveBeenCalledWith(expect.objectContaining({
-      from: 'orders@example.test',
+      from: { name: 'UNDERGRADUATE HUB', address: 'orders@example.test' },
       to: 'customer@example.test',
       subject: 'Delivery reminder',
     }));

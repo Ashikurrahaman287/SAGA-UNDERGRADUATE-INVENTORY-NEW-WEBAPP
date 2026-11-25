@@ -55,7 +55,9 @@ export async function sendEmail(params: { to: string; subject: string; html: str
     const env = getServerEnv();
     provider = env.EMAIL_PROVIDER || 'none';
     const from = env.EMAIL_FROM_ADDRESS;
+    const senderName = env.EMAIL_FROM_NAME;
     if (!from) return { sent: false, provider, error: 'Email sender address is not configured.' };
+    const formattedFrom = senderName ? `${senderName} <${from}>` : from;
 
     if (provider === 'smtp') {
       if (!env.EMAIL_SMTP_HOST || !env.EMAIL_SMTP_USER || !env.EMAIL_SMTP_PASSWORD) {
@@ -72,7 +74,7 @@ export async function sendEmail(params: { to: string; subject: string; html: str
         socketTimeout: 20000,
       });
       const result = await transport.sendMail({
-        from,
+        from: senderName ? { name: senderName, address: from } : from,
         to: params.to,
         subject: params.subject,
         html: params.html,
@@ -91,15 +93,15 @@ export async function sendEmail(params: { to: string; subject: string; html: str
     if (provider === 'resend') {
       url = 'https://api.resend.com/emails';
       headers.Authorization = `Bearer ${apiKey}`;
-      body = { from, to: [params.to], subject: params.subject, html: params.html, text: params.text };
+      body = { from: formattedFrom, to: [params.to], subject: params.subject, html: params.html, text: params.text };
     } else if (provider === 'postmark') {
       url = 'https://api.postmarkapp.com/email';
       headers['X-Postmark-Server-Token'] = apiKey;
-      body = { From: from, To: params.to, Subject: params.subject, HtmlBody: params.html, TextBody: params.text, MessageStream: 'outbound' };
+      body = { From: formattedFrom, To: params.to, Subject: params.subject, HtmlBody: params.html, TextBody: params.text, MessageStream: 'outbound' };
     } else if (provider === 'sendgrid') {
       url = 'https://api.sendgrid.com/v3/mail/send';
       headers.Authorization = `Bearer ${apiKey}`;
-      body = { personalizations: [{ to: [{ email: params.to }] }], from: { email: from }, subject: params.subject, content: [{ type: 'text/plain', value: params.text }, { type: 'text/html', value: params.html }] };
+      body = { personalizations: [{ to: [{ email: params.to }] }], from: { email: from, name: senderName }, subject: params.subject, content: [{ type: 'text/plain', value: params.text }, { type: 'text/html', value: params.html }] };
     } else return { sent: false, provider, error: 'Configured email provider is unsupported for API delivery.' };
 
     const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });

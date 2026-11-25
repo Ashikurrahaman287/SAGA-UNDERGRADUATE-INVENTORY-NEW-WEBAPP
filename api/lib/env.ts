@@ -13,6 +13,7 @@ const serverEnvSchema = z.object({
   EMAIL_SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
   EMAIL_SMTP_USER: z.string().min(1).optional(),
   EMAIL_SMTP_PASSWORD: z.string().min(1).optional(),
+  EMAIL_FROM_NAME: z.string().trim().min(1).optional(),
   EMAIL_FROM_ADDRESS: z.string().email().optional(),
 });
 
@@ -32,6 +33,7 @@ export function getServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv
     EMAIL_SMTP_PORT: source.EMAIL_SMTP_PORT || undefined,
     EMAIL_SMTP_USER: source.EMAIL_SMTP_USER || undefined,
     EMAIL_SMTP_PASSWORD: source.EMAIL_SMTP_PASSWORD || undefined,
+    EMAIL_FROM_NAME: source.EMAIL_FROM_NAME || undefined,
     EMAIL_FROM_ADDRESS: source.EMAIL_FROM_ADDRESS || undefined,
   });
 }
@@ -50,6 +52,7 @@ export function isServerConfigurationReady(source: NodeJS.ProcessEnv = process.e
     EMAIL_SMTP_PORT: source.EMAIL_SMTP_PORT || undefined,
     EMAIL_SMTP_USER: source.EMAIL_SMTP_USER || undefined,
     EMAIL_SMTP_PASSWORD: source.EMAIL_SMTP_PASSWORD || undefined,
+    EMAIL_FROM_NAME: source.EMAIL_FROM_NAME || undefined,
     EMAIL_FROM_ADDRESS: source.EMAIL_FROM_ADDRESS || undefined,
   });
   return Boolean(
