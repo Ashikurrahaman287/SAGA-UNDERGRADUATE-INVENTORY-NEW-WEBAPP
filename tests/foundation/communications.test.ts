@@ -9,7 +9,7 @@ vi.mock('nodemailer', () => ({
 
 import { describe, expect, it, vi } from 'vitest';
 import { salePlacedSms, deliveryDeliveredSms, paymentReceivedSms } from '../../api/_lib/notifications';
-import { canSendTransactionalEmail, sendEmail } from '../../api/_lib/email';
+import { canSendTransactionalEmail, renderOrderEmail, sendEmail } from '../../api/_lib/email';
 import {
   normalizeBangladeshPhone,
   estimateSmsSegments,
@@ -57,6 +57,35 @@ describe('communications provider safety', () => {
       subject: 'Delivery reminder',
     }));
     vi.unstubAllEnvs();
+  });
+
+  it('renders polished order and delivery confirmation emails safely', () => {
+    const data = {
+      customerName: 'Sam Customer',
+      receiptNumber: 'RCP-1001',
+      createdAt: '2026-11-25T10:00:00.000Z',
+      scheduledAt: '2026-11-27T10:00:00.000Z',
+      location: 'Dhaka',
+      items: [{ name: 'Book <script>', sku: 'BK-1', quantity: 1, unitPrice: 100, lineTotal: 100 }],
+      subtotal: 100,
+      discount: 0,
+      deliveryFee: 0,
+      total: 100,
+      paid: 100,
+      due: 0,
+      currency: 'BDT',
+      businessName: 'UNDERGRADUATE HUB',
+    };
+    const orderEmail = renderOrderEmail(data);
+    const deliveryEmail = renderOrderEmail({ ...data, emailType: 'delivery_confirmation' });
+
+    expect(orderEmail).toContain('ORDER CONFIRMATION');
+    expect(orderEmail).toContain('Thanks for your order, Sam');
+    expect(orderEmail).toContain('name="viewport"');
+    expect(orderEmail).toContain('Book &lt;script&gt;');
+    expect(orderEmail).not.toContain('<script>');
+    expect(deliveryEmail).toContain('DELIVERY CONFIRMED');
+    expect(deliveryEmail).toContain('Your order has arrived, Sam');
   });
 
   it('normalizes Bangladeshi phone numbers', () => {

@@ -8,7 +8,7 @@ import { requirePermission } from '../lib/auth/authorization-context.js';
 import { requireCsrf, requireSameOrigin } from '../lib/auth/security.js';
 import { permissions } from '../../src/lib/permissions/permission-registry.js';
 import { salePlacedSms, sendSaleNotification } from '../_lib/notifications.js';
-import { renderOrderEmail, sendEmail } from '../_lib/email.js';
+import { canSendTransactionalEmail, renderOrderEmail, sendEmail } from '../_lib/email.js';
 
 const itemSchema = z
   .object({ productId: z.string().uuid(), quantity: z.number().int().positive() })
@@ -254,6 +254,7 @@ export default async function sales(
       return;
     }
     const saleData = rpc.data as Record<string, unknown>;
+    let orderEmailStatus = 'not_available';
     if (input.customerId && saleData.idempotent !== true) {
       const customer = await context.client
         .from('customers')
@@ -278,6 +279,7 @@ export default async function sales(
         ).catch(() => undefined);
 
         if (customer.data.email) {
+          orderEmailStatus = 'failed';
           const consent = await context.client
             .from('communication_consents')
             .select('consent_status')
@@ -285,7 +287,10 @@ export default async function sales(
             .eq('customer_id', input.customerId)
             .eq('channel', 'email')
             .maybeSingle();
-          if (!consent.error && consent.data?.consent_status === 'granted') {
+          if (!consent.error && !canSendTransactionalEmail(consent.data?.consent_status)) {
+            orderEmailStatus = 'opted_out';
+          }
+          if (!consent.error && canSendTransactionalEmail(consent.data?.consent_status)) {
             const [saleRecord, items, organization] = await Promise.all([
               context.client.from('sales').select('created_at,subtotal,discount_amount,delivery_fee,total_amount,confirmed_paid_amount,amount_due,payment_method,delivery_scheduled_at,delivery_address_snapshot').eq('organization_id', context.organization.id).eq('id', saleData.sale_id).maybeSingle(),
               context.client.from('sale_items').select('product_name_snapshot,sku_snapshot,quantity,unit_price,line_total').eq('organization_id', context.organization.id).eq('sale_id', saleData.sale_id).order('created_at'),
@@ -315,6 +320,7 @@ export default async function sales(
                 due: Number(saleRecord.data.amount_due || 0),
                 currency: organization.data?.currency || 'BDT',
                 businessName: organization.data?.name || 'UNDERGRADUATE HUB',
+                emailType: 'order_confirmation',
               });
               const log = await context.client.rpc('reserve_communication_send', {
                 p_organization_id: context.organization.id,
@@ -334,6 +340,7 @@ export default async function sales(
                   html,
                   text: `Your order ${String(saleData.receipt_number || '')} has been placed. Total ${Number(saleRecord.data.total_amount).toFixed(2)}; due ${Number(saleRecord.data.amount_due).toFixed(2)}.`,
                 });
+                orderEmailStatus = sent.sent ? 'sent' : 'failed';
                 await context.client.rpc('complete_communication_send', {
                   p_organization_id: context.organization.id,
                   p_log_id: log.data,
@@ -351,7 +358,7 @@ export default async function sales(
     sendJson(
       response,
       201,
-      { data: rpc.data, requestId: getRequestId(request) },
+      { data: { ...saleData, emailStatus: orderEmailStatus }, requestId: getRequestId(request) },
       getRequestId(request),
     );
   } catch (error) {

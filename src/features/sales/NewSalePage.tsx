@@ -547,6 +547,7 @@ function SaleReceipt({
   onAnotherSale: () => void;
 }): ReactElement {
   const sale = receipt as Record<string, unknown>;
+  const emailStatus = typeof sale.emailStatus === 'string' ? sale.emailStatus : 'not_available';
   return (
     <PageContainer>
       <div className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm print:border-0 print:shadow-none">
@@ -556,6 +557,9 @@ function SaleReceipt({
           <p className="mt-2 text-sm text-slate-500">Receipt {String(sale.receipt_number)}</p>
         </div>
         <div className="py-6 text-sm">
+          {emailStatus === 'sent' && <p role="status" className="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-emerald-800">Order confirmation email sent.</p>}
+          {emailStatus === 'failed' && <p role="status" className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-amber-800">Sale created, but the order email could not be sent.</p>}
+          {emailStatus === 'opted_out' && <p role="status" className="mb-4 rounded-md bg-slate-100 px-3 py-2 text-slate-700">Order email skipped because the customer opted out.</p>}
           <SummaryRow label="Subtotal" value={String(sale.subtotal)} />
           <SummaryRow label="Discount" value={String(sale.discount_amount)} />
           <SummaryRow label="Delivery fee" value={String(sale.delivery_fee)} />

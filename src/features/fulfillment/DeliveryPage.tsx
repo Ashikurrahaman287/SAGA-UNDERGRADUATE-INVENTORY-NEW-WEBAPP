@@ -55,9 +55,21 @@ export function DeliveryPage(): ReactElement {
       const body = (await response.json()) as { error?: { message?: string } };
       setError(body.error?.message || 'Delivery could not be completed.');
     } else {
-      const body = await response.json() as { data?: { amount_due?: number; paymentSms?: string; deliveredSms?: string } };
+      const body = await response.json() as { data?: { amount_due?: number; paymentSms?: string; deliveredSms?: string; deliveryEmail?: string } };
       const remainingDue = Number(body.data?.amount_due || 0);
-      setNotice(remainingDue > 0 ? `Delivered. Remaining due: ${remainingDue.toFixed(2)}.` : 'Payment confirmed and delivery completed.');
+      const completionMessage = remainingDue > 0
+        ? `Delivered. Remaining due: ${remainingDue.toFixed(2)}.`
+        : 'Payment confirmed and delivery completed.';
+      const emailMessage = body.data?.deliveryEmail === 'sent'
+        ? 'Delivery email sent.'
+        : body.data?.deliveryEmail === 'failed'
+          ? 'Delivery completed, but the email could not be sent.'
+          : body.data?.deliveryEmail === 'opted_out'
+            ? 'Email skipped because the customer opted out.'
+            : body.data?.deliveryEmail === 'already_sent'
+              ? 'Delivery email was already sent.'
+              : '';
+      setNotice([completionMessage, emailMessage].filter(Boolean).join(' '));
       setDoneSale(null);
       setDeliverWithDue(false);
       setPaymentAmount('0');
