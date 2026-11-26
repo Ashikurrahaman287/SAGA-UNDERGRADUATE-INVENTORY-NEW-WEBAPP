@@ -2,7 +2,7 @@
 
 ## Scope
 
-Task 07 implements the product catalog, organization-scoped categories, product details, stock history, low-stock filtering, atomic opening stock, manual adjustments, and safe archive behavior. Supplier administration remains a future module; existing supplier relationships are displayed where the current user's RLS permits them.
+The product and inventory modules provide organization-scoped categories, product details, stock history, low-stock filtering, atomic opening stock, manual adjustments, and safe archive behavior. Supplier records are managed through the separate supplier module.
 
 ## Data model
 

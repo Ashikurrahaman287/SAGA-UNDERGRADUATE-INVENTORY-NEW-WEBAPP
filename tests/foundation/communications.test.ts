@@ -9,7 +9,7 @@ vi.mock('nodemailer', () => ({
 
 import { describe, expect, it, vi } from 'vitest';
 import { salePlacedSms, deliveryDeliveredSms, paymentReceivedSms } from '../../api/_lib/notifications';
-import { canSendTransactionalEmail, renderOrderEmail, sendEmail } from '../../api/_lib/email';
+import { canSendTransactionalEmail, renderCommunicationEmail, renderOrderEmail, sendEmail } from '../../api/_lib/email';
 import {
   normalizeBangladeshPhone,
   estimateSmsSegments,
@@ -86,6 +86,15 @@ describe('communications provider safety', () => {
     expect(orderEmail).not.toContain('<script>');
     expect(deliveryEmail).toContain('DELIVERY CONFIRMED');
     expect(deliveryEmail).toContain('Your order has arrived, Sam');
+  });
+
+  it('escapes administrator-composed email content', () => {
+    const html = renderCommunicationEmail({
+      businessName: 'UNDERGRADUATE HUB',
+      message: '<script>alert(1)</script>\nOrder update',
+    });
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;<br>Order update');
+    expect(html).not.toContain('<script>');
   });
 
   it('normalizes Bangladeshi phone numbers', () => {

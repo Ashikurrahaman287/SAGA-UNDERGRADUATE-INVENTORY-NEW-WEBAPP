@@ -2,7 +2,9 @@
 
 ## Scope and migration order
 
-Task 02 creates the PostgreSQL foundation only. It does not create Auth users, passwords, production data, or business RPCs for sales/returns. Apply migrations in lexical order:
+The schema is managed by numbered, additive Supabase migrations. Apply every migration in lexical order to a disposable development database and staging before production. Migrations `001`–`025` established the initial identity, catalog, sales, fulfillment, communications, and administration schema. Migrations `026`–`049` extend and harden those workflows, including atomic sales, payments, fulfillment, cancellation/restocking, email delivery tracking, and release protections. Use `npx supabase migration list --remote` to compare local and linked migration history.
+
+Initial migration history:
 
 1. `001_identity_and_organizations.sql` creates organizations, profiles, memberships, settings, role enums, timestamp maintenance, and authorization helpers.
 2. `002_catalog_and_inventory.sql` creates categories, suppliers, products, stock movements, and immutable history protection.
@@ -60,7 +62,7 @@ All tenant-owned tables carry `organization_id`. Relationships between tenant-ow
 
 ## Money, inventory, and history
 
-Money uses `numeric(18,2)` and quantity uses `numeric(18,3)`. Products reject negative quantity/prices. Payments and refunds must be positive. Sale, return, payment, and delivery workflows remain future transaction/RPC boundaries; the schema stores snapshots and idempotency keys so those operations can be atomic and retry-safe when implemented.
+Money uses `numeric(18,2)` and quantity uses `numeric(18,3)`. Products reject negative quantity/prices. Payments and refunds must be positive. Sale, return, payment, and delivery workflows use transaction RPCs with fixed-precision amounts, immutable snapshots, and idempotency keys. Inventory and financial updates are applied atomically and retain audit/event history.
 
 Stock movements store before/after quantities, actor, reason, operation type, and reference. Update/delete triggers reject mutation. Audit logs and event tables preserve operational history. Product/customer/category records use active/archive flags rather than requiring destructive deletion.
 
@@ -83,8 +85,8 @@ Indexes cover active memberships by user, tenant/status filters, product/categor
 
 `supabase/tests/database_foundation.sql` is a pgTAP smoke suite for table existence, keys, checks, and representative RLS enablement. Run it in Supabase SQL editor or a local Supabase test database with pgTAP available. Full authenticated RLS tests require actual Supabase Auth identities and a staging project; they are not falsely claimed as locally executed here.
 
-Apply with the Supabase CLI in a disposable local/staging project, then run `supabase db test`. Never reset or apply these migrations to production without explicit approval and a backup/rollback plan. `supabase/seed.sql` contains synthetic development records only and creates no privileged Auth users.
+Apply with the Supabase CLI in a disposable local/staging project, then run the database test suite. Production migrations require a reviewed change, an approved deployment, and a backup/rollback plan. Never reset a linked production database. `supabase/seed.sql` contains development records only and creates no privileged Auth users.
 
 ## Decisions requiring confirmation
 
-The schema leaves accounting journal tables, provider credentials, configurable role exceptions, and the complete atomic sale/return/payment RPCs for later tasks. Business owners must confirm currency, timezone, payment methods, return approval policy, and whether operational costs belong in the first accounting release before those contracts are finalized.
+The schema does not include a general-purpose double-entry accounting ledger. Business owners should confirm local tax, retention, privacy, currency, and operational policies before production rollout; provider credentials belong in server environment settings, not database rows or browser variables.

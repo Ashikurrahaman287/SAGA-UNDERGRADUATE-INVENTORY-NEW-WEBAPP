@@ -4,7 +4,7 @@
 
 Authorization is evaluated at four boundaries: React route and presentation guards, server middleware, server resource lookups, and Supabase RLS. The browser role is derived from the verified `/api/auth/me` response only for presentation. The server derives user, organization, and role from the Supabase session and active `memberships` row; request payloads cannot select a different tenant or Rider.
 
-The shared permission vocabulary is in `src/lib/permissions/permission-registry.ts`. `api/lib/auth/authorization-context.ts` is the backend enforcement boundary and records denied permission checks. Existing Admin account endpoints use `requirePermission`; future business endpoints must use the same middleware.
+The shared permission vocabulary is in `src/lib/permissions/permission-registry.ts`. `api/lib/auth/authorization-context.ts` is the backend enforcement boundary and records denied permission checks. Business endpoints use `requirePermission` and must retain that server-side authorization boundary.
 
 ## Permission matrix
 
@@ -13,7 +13,7 @@ The shared permission vocabulary is in `src/lib/permissions/permission-registry.
 | Workspace                           | View                          | View                            | View                                                               |
 | Dashboard/analytics                 | Full                          | Denied                          | Denied                                                             |
 | Products/inventory                  | Full                          | View/create/update/stock adjust | Denied                                                             |
-| Customers                           | Full                          | View/create/update              | Denied except assigned-delivery data through a future resource API |
+| Customers                           | Full                          | View/create/update              | Denied except minimal assigned-delivery data |
 | Sales/history                       | Full                          | View/create/update              | Denied                                                             |
 | Packaging                           | Full                          | View/update                     | Denied                                                             |
 | Delivery                            | Full/assign/reassign/complete | View/update/complete            | Assigned view/update/complete only                                 |
@@ -24,7 +24,7 @@ The shared permission vocabulary is in `src/lib/permissions/permission-registry.
 | Communications/settings/users/audit | Full                          | Denied                          | Denied                                                             |
 | Optional CRM/investments            | Full when enabled             | Denied                          | Denied                                                             |
 
-Only the workspace is currently implemented in the UI. Navigation does not advertise future modules.
+The authenticated UI exposes role-appropriate operational modules. Navigation filtering is a usability boundary, not a security control.
 
 ## Backend flow
 
@@ -37,18 +37,18 @@ Only the workspace is currently implemented in the UI. Navigation does not adver
 
 ## RLS and database hardening
 
-Task 02 enables RLS on every application table. Migration 011 prevents tenant reparenting, prevents membership user/organization reassignment, limits Rider delivery field mutation, and removes normal membership deletion. Migration 012 restricts delivery event inserts to the assigned Rider and preserves append-only history boundaries. RLS policies remain an independent boundary even when an API handler is bypassed.
+The numbered migrations enable RLS on application tables. Migration 011 prevents tenant reparenting, prevents membership user/organization reassignment, limits Rider delivery field mutation, and removes normal membership deletion. Migration 012 restricts delivery event inserts to the assigned Rider and preserves append-only history boundaries. RLS policies remain an independent boundary even when an API handler is bypassed.
 
 `SECURITY DEFINER` helpers use fixed search paths and are not executable by `PUBLIC`. Anonymous users have no business-table policies. The service-role client is server-only and is used only for explicitly privileged account operations/audit writes.
 
 ## Frontend guards
 
-`ProtectedRoute` handles authentication and optional permission checks. `PermissionGuard` and `RoleGuard` are reusable presentation guards. `getAuthorizedNavigation` filters only currently implemented destinations. These utilities improve UX but are never treated as authorization; every future mutation must call backend middleware and rely on RLS.
+`ProtectedRoute` handles authentication and optional permission checks. `PermissionGuard` and `RoleGuard` are reusable presentation guards. `getAuthorizedNavigation` filters destinations by the centralized permission registry. These utilities improve UX but are never treated as authorization; every mutation must call backend middleware and rely on RLS.
 
 ## Rider boundary
 
-Rider queries must use the authenticated user ID from the session, never `rider_user_id` from the request body. `requireDeliveryAccess` filters by trusted organization and authenticated Rider assignment. The database policy and trigger prevent cross-Rider event writes, assignment changes, tenant changes, and invalid delivery transitions. Future delivery APIs must return an allowlisted DTO without customer email or administrative payment data.
+Rider queries use the authenticated user ID from the session, never `rider_user_id` from the request body. `requireDeliveryAccess` filters by trusted organization and authenticated Rider assignment. The database policy and trigger prevent cross-Rider event writes, assignment changes, tenant changes, and invalid delivery transitions. Rider delivery responses are allowlisted and omit customer email and administrative payment data.
 
 ## Testing
 
-The local suite tests the complete registry matrix and frontend navigation, with 11 tests passing. Direct Supabase REST/RPC RLS tests, cross-organization tests, and cross-Rider tests require isolated Auth identities and a staging Supabase project. They are not claimed as locally verified because this workspace has no Supabase CLI, database, or credentials.
+Automated tests cover permission rules and frontend navigation. Direct Supabase REST/RPC RLS tests, cross-organization tests, and cross-Rider tests require isolated Auth identities and a staging Supabase project; local unit tests alone do not verify those boundaries.

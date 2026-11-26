@@ -2,7 +2,7 @@
 
 ## Scope
 
-Task 09 implements separate Admin-only supplier and seller/operator business-record modules. Suppliers reuse the existing `suppliers` entity and its existing `products.supplier_id` relationship. Sellers reuse the existing `sellers` entity and existing `sales.seller_id` relationship. No authentication role, password, Auth user, or membership type was introduced for sellers.
+Supplier and seller/operator records are managed in separate Admin-only modules. Suppliers use the `suppliers` entity and its `products.supplier_id` relationship. Sellers use the `sellers` entity and `sales.seller_id` relationship. Sellers are business records, not authentication identities or membership roles.
 
 ## Data model
 
@@ -28,7 +28,7 @@ Every endpoint requires the centralized Admin-only supplier/seller permission, d
 
 ## Sales integration contract
 
-Sales already contains nullable `seller_id` with an organization-safe foreign key. The current Sales UI/workflow is not implemented, so Task 09 does not build the Sales module or invent an attribution form. The future Sales task should accept an optional active seller ID for Admin policy, verify `(organization_id, seller_id)`, store the relation on `sales`, and preserve the seller ID/name/reference snapshot needed for historical display. Existing seller sales queries exclude cancelled sales and do not join payment or item rows, preventing duplicate totals.
+Sales contains a nullable `seller_id` with an organization-safe foreign key. The New Sale workflow accepts an optional active seller, and the transaction RPC validates and stores the relationship for historical reporting. Seller sales queries exclude cancelled sales and avoid joins that would duplicate totals.
 
 ## Authorization and RLS
 
@@ -40,4 +40,4 @@ Creation writes an audit event. Updates and archive/reactivation operations reta
 
 ## Testing and staging
 
-Local tests verify the Admin-only permission matrix and the existing application suite. Apply migration 018 in disposable Supabase staging and test Admin/Moderator/Rider/anonymous REST and RPC access, organization isolation, archived supplier assignment rejection, linked product counts, seller sale aggregation, and preservation of historical references. Live RLS and database execution remain pending because no Supabase project or CLI is configured in this workspace.
+Automated tests verify the Admin-only permission matrix. Test Admin/Moderator/Rider/anonymous REST and RPC access, organization isolation, archived supplier assignment rejection, linked product counts, seller sale aggregation, and preservation of historical references in an isolated Supabase staging project.

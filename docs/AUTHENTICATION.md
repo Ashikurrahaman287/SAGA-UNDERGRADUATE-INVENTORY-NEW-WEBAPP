@@ -35,10 +35,10 @@ Migration `009_auth_rate_limits.sql` creates a private rate-limit table and an a
 
 Configure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `AUTH_REDIRECT_URL` only in server runtime settings. The existing `VITE_SUPABASE_*` values remain browser-public for future direct read-only client use, but this authentication flow does not use them. In Supabase Auth URL Configuration, add the production and preview callback URLs, for example `/api/auth/callback`, and the final `/reset-password` URL.
 
-Apply migrations 009 and 010 after the Task 02 migrations. Run them in local/staging first. No public registration is implemented; administrators invite users through the protected server endpoint.
+Apply the numbered authentication migrations in sequence to development and staging before production. Public registration is disabled; administrators invite users through the protected server endpoint.
 
 RBAC and resource authorization are documented in [AUTHORIZATION.md](AUTHORIZATION.md). Apply migrations 011 and 012 after the authentication migrations before testing cross-organization or cross-Rider behavior.
 
 ## Known limitations
 
-This workspace has no configured Supabase project, Auth identities, or local Supabase CLI/psql, so live login, email delivery, token rotation, PostgreSQL rate-limit execution, and authenticated RLS tests require staging credentials and explicit approval. The frontend and endpoint contracts are tested locally without live credentials.
+Live login, role boundaries, token rotation, and PostgreSQL rate limiting must be tested with controlled identities in an isolated staging project. Local automated tests do not replace credentialed staging verification.

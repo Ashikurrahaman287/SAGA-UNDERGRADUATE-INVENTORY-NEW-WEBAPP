@@ -82,8 +82,8 @@ export function WelcomePage(): ReactElement {
               />
               <StatusRow
                 icon={<CircleCheck size={18} />}
-                label="Frontend shell"
-                detail="Responsive and accessible"
+                label="Application"
+                detail="Inventory and business operations"
               />
             </div>
           </Card>
@@ -98,11 +98,11 @@ export function WelcomePage(): ReactElement {
             accent={healthy ? 'text-emerald-700' : 'text-amber-700'}
           />
           <InfoItem label="API service" value="saga-inventory-api" />
-          <InfoItem label="Environment" value="Foundation / local" />
+          <InfoItem label="Environment" value={import.meta.env.DEV ? 'Development' : 'Hosted'} />
         </section>
         <footer className="flex flex-col gap-2 border-t border-slate-200 py-6 text-xs text-slate-500 sm:flex-row sm:justify-between">
-          <span>Built for focused, accountable operations.</span>
-          <span>Task 01 foundation</span>
+          <span>SAGA Inventory</span>
+          <span>Operations overview</span>
         </footer>
       </div>
     </main>

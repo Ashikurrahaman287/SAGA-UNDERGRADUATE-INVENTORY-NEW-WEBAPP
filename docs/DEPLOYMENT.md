@@ -8,7 +8,7 @@ Add the server environment variables from [ENVIRONMENT.md](ENVIRONMENT.md) to th
 
 ## Supabase
 
-Create or select the project outside this repository, then obtain the project URL and appropriate public/server keys through the Supabase dashboard. No schema, auth policy, storage bucket, or production data is created by Task 01. Later migrations must be additive, reviewed, and tested against staging with RLS enabled before production. Run `supabase db test` there, including `supabase/tests/settings_admin_audit.sql` and `supabase/tests/rbac_rls_release.sql`, before promoting a release.
+Create or select the project outside this repository, then obtain the project URL and appropriate public/server keys through the Supabase dashboard. Apply the numbered migrations in `supabase/migrations/` to a staging project, verify RLS and the business workflows, then promote reviewed migrations to Production. Never run a destructive reset against a linked cloud project. Use the database test scripts under `supabase/tests/` where the local Supabase test stack and pgTAP are available.
 
 ## Rollback
 

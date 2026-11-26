@@ -18,7 +18,7 @@ SwiftSMS codes 1002–1015 are mapped to human-readable terminal or retryable re
 
 ## Consent
 
-For customer-linked SMS recipients, explicit `sms` consent must equal `granted`. Missing, denied, or unknown consent creates `rejected_consent` and excludes the recipient from provider dispatch. Promotional sends require the promotional label; transaction sends default to transactional. Email dispatch currently returns 501 until a real email provider is explicitly configured; no mock email send is claimed.
+For customer-linked manual SMS recipients, explicit `sms` consent must equal `granted`. Missing, denied, or unknown consent creates `rejected_consent` and excludes the recipient from provider dispatch. Manual email dispatch is limited to stored customers whose email consent is explicitly `granted`, for both transactional and promotional labels. Automated order and delivery emails are transactional; they allow unknown consent while honoring explicit email opt-outs.
 
 ## Idempotency and rate limiting
 
@@ -35,7 +35,7 @@ All endpoints require the `communications.manage/send/view` Admin permissions. M
 
 ## Secret and log safety
 
-`SWIFTSMS_API_KEY`, optional base URL, and future email secrets are server environment variables. The adapter redacts `apikey` in URLs and provider objects. Provider responses stored in logs contain no raw key; audit records contain no provider credentials.
+`SWIFTSMS_API_KEY`, optional base URL, SMTP credentials, and email API keys are server environment variables. The SMS adapter redacts `apikey` in URLs and provider objects. Provider responses stored in logs contain no raw key; audit records contain no provider credentials.
 
 ## Testing
 

@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Sales History reuses Task 10's existing `sales`, `sale_items`, `payments`, `receipts`, customer, seller, and organization records. It does not create another transaction or sales table. The read API is server-side and RPC-backed; the UI sends only validated filter, sort, and pagination values.
+Sales History reuses existing `sales`, `sale_items`, `payments`, `receipts`, customer, seller, and organization records. It does not create another transaction or sales table. The read API is server-side and RPC-backed; the UI sends only validated filter, sort, and pagination values.
 
 ## Search and filtering
 
@@ -20,7 +20,7 @@ When `from` or `to` is supplied, the API reads the organization timezone and con
 
 - Total sales: count of valid sales.
 - Sales value: sum of `sales.total_amount`.
-- Amount collected: sum of completed `payments.amount`; when no completed payment exists, the Task 10 persisted `sales.amount_paid` fallback is used for compatibility.
+- Amount collected: sum of completed `payments.amount`; when no completed payment exists, the persisted `sales.amount_paid` fallback is used for compatibility.
 - Outstanding: sum of `greatest(total_amount - confirmed_paid, 0)`.
 - Paid: confirmed paid equals or exceeds sale total.
 - Partially paid: confirmed paid is greater than zero and less than total.

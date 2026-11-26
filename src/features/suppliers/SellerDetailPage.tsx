@@ -158,7 +158,7 @@ export function SellerDetailPage(): ReactElement {
         ) : (
           <EmptyState
             title="No attributed sales"
-            description="Future sales workflows can associate valid sales with this record."
+            description="New Sale can attribute orders to this seller for reporting."
           />
         )}
       </PageSection>

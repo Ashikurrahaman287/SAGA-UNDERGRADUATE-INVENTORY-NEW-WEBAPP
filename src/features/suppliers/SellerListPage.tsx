@@ -134,7 +134,7 @@ export function SellerListPage(): ReactElement {
       ) : (
         <EmptyState
           title="No sellers found"
-          description="Create a seller/operator record for future sales attribution."
+          description="Create a seller/operator record for order attribution and sales reporting."
         />
       )}
     </PageContainer>

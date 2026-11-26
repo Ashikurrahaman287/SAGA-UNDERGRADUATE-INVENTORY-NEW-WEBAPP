@@ -29,7 +29,13 @@ Local static-only checks can run against Vite preview with `SMOKE_STATIC_ONLY=1`
 | `SUPABASE_SERVICE_ROLE_KEY`     | Server-only, never `VITE_`                                | Required server runtime variable; tightly restrict project access |
 | `AUTH_REDIRECT_URL`             | Server-only                                               | Must point to the deployed same-origin auth callback/reset flow   |
 | `SWIFTSMS_API_KEY`              | Server-only, never `VITE_`                                | Add only where live SMS is explicitly enabled                     |
-| Email provider credentials      | Server-only, never `VITE_`                                | Configure only after a real provider is selected                  |
+| `EMAIL_PROVIDER`                | Server-only, never `VITE_`                                | Set to `smtp`, `resend`, `postmark`, `sendgrid`, or `none`         |
+| `EMAIL_SMTP_HOST`               | Server-only, never `VITE_`                                | Required for SMTP delivery                                        |
+| `EMAIL_SMTP_PORT`               | Server-only, never `VITE_`                                | Usually `465` or `587`                                             |
+| `EMAIL_SMTP_USER`               | Server-only, never `VITE_`                                | SMTP login                                                         |
+| `EMAIL_SMTP_PASSWORD`           | Server-only, never `VITE_`                                | SMTP secret                                                        |
+| `EMAIL_FROM_NAME`               | Server-only                                                | Sender name                                                        |
+| `EMAIL_FROM_ADDRESS`            | Server-only                                                | Verified sender address                                            |
 | `SMOKE_EMAIL`, `SMOKE_PASSWORD` | Never build variables                                     | CI-only controlled test identity secrets                          |
 
 Do not configure `ADMIN_PASSWORD`, `MOD_PASSWORD`, or `RIDER_PASSWORD` for this Supabase individual-account flow. Production secrets must not be copied to Preview unless the Preview project is intentionally isolated and approved.
@@ -42,7 +48,7 @@ Cookies must be `HttpOnly`, `SameSite=Lax`, path `/`, and `Secure` in production
 
 ## Database and RLS release gate
 
-Apply numbered migrations in order to a disposable/local database, then staging, before production. Run `supabase db test`. Never reset or drop a production database. `supabase/tests/settings_admin_audit.sql` checks all public tables for RLS, audit policy/immutability privileges, administration RPC grants, Rider eligibility triggers, and fixed-precision storage. `supabase/tests/rbac_rls_release.sql` exercises Admin, Moderator, Rider, anonymous, cross-organization, direct membership-write, and audit immutability boundaries.
+Apply numbered migrations in order to a disposable/local database, then staging, before production. Run the available SQL tests against staging. Never reset or drop a production database. `supabase/tests/settings_admin_audit.sql` checks public tables for RLS, audit policy/immutability privileges, administration RPC grants, Rider eligibility triggers, and fixed-precision storage. `supabase/tests/rbac_rls_release.sql` exercises Admin, Moderator, Rider, anonymous, cross-organization, direct membership-write, and audit immutability boundaries.
 
 | Public tables                                                             | Expected access boundary                                                                                                    |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |

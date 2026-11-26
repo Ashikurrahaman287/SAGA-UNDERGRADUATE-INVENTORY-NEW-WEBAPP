@@ -2,7 +2,7 @@
 
 ## Scope
 
-Task 12 adds operational packaging and delivery workflows to the existing sales, payment, customer, rider, audit, and receipt foundations. It does not implement Sales or Rider modules outside this fulfillment boundary.
+Packaging and fulfillment workflows connect persisted sales, payments, customers, delivery assignments, audit history, and receipts.
 
 ## Status model
 

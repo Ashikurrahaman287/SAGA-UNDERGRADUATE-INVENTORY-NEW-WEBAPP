@@ -14,7 +14,7 @@ Migration `013_dashboard_analytics.sql` performs aggregation inside PostgreSQL u
 | Revenue      | The current operational definition is recognized valid sales value, equal to the filtered `sales.total_amount` sum. It is not cash collected or net accounting revenue. |
 | Payments due | Sum of authoritative `sales.amount_due` for valid filtered sales. Partial payment states remain outstanding until their recorded balance is zero.                       |
 | Gross profit | Sum of `sale_items.line_total - sale_items.unit_cost_snapshot * sale_items.quantity` for valid filtered sales. This is gross profit only.                               |
-| Net profit   | Intentionally unavailable. Complete accounting journal and expense reconciliation are not implemented yet.                                                              |
+| Net profit   | Gross profit less operational costs and internal packaging costs for valid sales in the selected business-date range. This is an operational estimate, not a double-entry accounting statement. |
 | Stock value  | Sum of active `products.quantity * products.cost_price` across the organization.                                                                                        |
 | Low stock    | Active products where `quantity <= low_stock_threshold`, with a count and allowlisted product rows.                                                                     |
 | Returns      | Count and sum of `returns.total_amount` where status is `approved` or `processed` and the return date is in range.                                                      |
@@ -35,8 +35,8 @@ Only Admin memberships satisfy `dashboard.view`. Moderator and Rider roles have 
 
 ## UI behavior
 
-KPI cards link to the relevant future source routes, but those routes are visibly marked as foundation placeholders until their business modules exist. Trend, payment, fulfillment, top-product, and low-stock widgets have independent empty and loading states. Net profit displays `Unavailable` with its missing accounting dependency instead of a fabricated value.
+KPI cards link to the relevant sales, payments, inventory, and returns views. Trend, payment, fulfillment, top-product, and low-stock widgets have independent empty and loading states. Net profit is shown only when its required accounting inputs are available.
 
 ## Testing and staging
 
-Local tests cover date boundary validation, Admin-only permission mapping, and existing shell/auth behavior. Apply migration 013 in a disposable Supabase staging project, create isolated Auth identities for Admin, Moderator, and Rider, and verify direct API/RPC access, organization isolation, cancelled-sale exclusion, partial balances, stock valuation, and reconciliation against fixture records. This workspace has no live Supabase credentials, so those database-backed checks are not claimed as executed.
+Automated tests cover date boundary validation, Admin-only permission mapping, and dashboard calculations. Verify direct API/RPC access, organization isolation, cancelled-sale exclusion, partial balances, stock valuation, and reconciliation against fixture records in an isolated staging project.

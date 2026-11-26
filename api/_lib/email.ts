@@ -105,6 +105,12 @@ export function renderOrderEmail(data: OrderEmailData): string {
 </body></html>`;
 }
 
+export function renderCommunicationEmail(data: { businessName: string; message: string }): string {
+  const business = escapeHtml(data.businessName);
+  const message = escapeHtml(data.message).replace(/\r?\n/g, '<br>');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><title>${business}</title></head><body style="margin:0;padding:24px 12px;background:#eef2f7;font-family:Arial,Helvetica,sans-serif;color:#17233b"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#eef2f7"><tr><td align="center"><table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#fff;border:1px solid #e2e8f0"><tr><td style="height:5px;background:#2455a6;font-size:0">&nbsp;</td></tr><tr><td style="padding:22px 28px;background:#14233d;color:#fff;font-size:18px;font-weight:700">${business}</td></tr><tr><td style="padding:28px;color:#39465c;font-size:15px;line-height:24px">${message}</td></tr><tr><td style="padding:16px 28px;background:#f5f7fa;border-top:1px solid #e5ebf3;color:#718096;text-align:center;font-size:11px;line-height:18px">Message from ${business}</td></tr></table></td></tr></table></body></html>`;
+}
+
 export async function sendEmail(params: { to: string; subject: string; html: string; text: string }): Promise<{ sent: boolean; provider: string; messageId?: string; error?: string }> {
   let provider = process.env.EMAIL_PROVIDER || 'none';
   try {

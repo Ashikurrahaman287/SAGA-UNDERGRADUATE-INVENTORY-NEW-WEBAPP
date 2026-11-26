@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Task 10 implements a server-authoritative New Sale workspace and a single PostgreSQL transaction RPC. The React page submits only product IDs, quantities, customer/seller IDs, discount input, delivery fee, payment input, address/schedule, notes, and a UUID idempotency key. It never sends a unit price, line subtotal, final total, organization ID, role, or stock balance.
+The New Sale workspace uses a server-authoritative PostgreSQL transaction RPC. The React page submits only product IDs, quantities, customer/seller IDs, discount input, delivery fee, payment input, address/schedule, notes, and a UUID idempotency key. It never sends a unit price, line subtotal, final total, organization ID, role, or stock balance.
 
 ## Calculation rules
 
@@ -12,7 +12,7 @@ Payment status is `paid` when due is zero, `partial` when an initial payment is 
 
 ## Transaction
 
-Migration 019 creates a receipt sequence and `create_sale_transaction` RPC. The RPC takes an advisory transaction lock for the organization/idempotency key, validates active organization membership and role, loads and locks product rows, verifies active status and stock, calculates authoritative prices, deducts stock, inserts immutable sale movements, creates sale items with price/cost snapshots, creates the initial payment and receipt, creates an initial packaging record, writes idempotency and audit rows, and commits atomically.
+Migrations 019 and 037 create and extend the receipt sequence and `create_sale_transaction` RPC. The RPC takes an advisory transaction lock for the organization/idempotency key, validates active organization membership and role, loads and locks product rows, verifies active status and stock, calculates authoritative prices, deducts stock, inserts immutable sale movements, creates sale items with price/cost snapshots, creates the initial payment and receipt, creates an initial packaging record, writes idempotency and audit rows, and commits atomically.
 
 A retry with the same key and the same canonical request hash returns the original sale data. A retry with the same key and different payload is rejected. Concurrent retries are serialized by the advisory lock. Only the RPC is allowed to create sale, item, payment, receipt, packaging, and idempotency rows through transaction-local settings.
 
@@ -22,7 +22,7 @@ For each item the RPC locks the product row, requires a positive whole quantity,
 
 ## Receipt
 
-Receipt numbers are unique within an organization and generated from an organization sequence with a UTC date prefix. The receipt table snapshots the generated receipt and financial totals. The UI provides a print view and a sale-detail view. SMS/email receipt delivery is not implemented.
+Receipt numbers are unique within an organization and generated from an organization sequence with a UTC date prefix. The receipt table snapshots the generated receipt and financial totals. The UI provides a print view and a sale-detail view. Order confirmation email and SMS are sent after a successful sale when customer contact details are available; explicit email opt-outs are honored, and provider failures do not roll back the sale.
 
 ## Customer and seller
 
@@ -43,4 +43,4 @@ Sales creation requires `sales.create`. Sales/history reads require `sales.view`
 
 ## Testing and staging
 
-The Vitest suite covers fixed/percentage calculations, partial payment, overpayment, and percentage-range validation. Apply migration 019 to disposable staging, then test role access, organization boundaries, concurrent stock, idempotent retries, changed-payload keys, receipt uniqueness, stock movements, payment status, and dashboard reconciliation using isolated fixture identities. Live database execution and real-role browser testing remain pending because no Supabase project or credentials are configured in this workspace.
+The Vitest suite covers fixed/percentage calculations, partial payment, overpayment, and percentage-range validation. Apply the complete migration sequence to disposable staging, then test role access, organization boundaries, concurrent stock, idempotent retries, changed-payload keys, receipt uniqueness, stock movements, payment status, and dashboard reconciliation using isolated fixture identities. Real-role browser testing remains a staging release gate.

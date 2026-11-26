@@ -26,11 +26,11 @@ Typography uses the existing readable Aptos/Segoe UI family, with compact upperc
 - `Header`: breadcrumbs, notification foundation, verified user/organization context, and sign-out menu.
 - `PageContainer`, `PageHeader`, `PageSection`, `PageToolbar`: reusable page composition primitives.
 - `States`: loading, empty, error, unauthorized, not-found, and ready states.
-- `PermissionGuard` and `RoleGuard`: presentation guards backed by the centralized Task 04 registry.
+- `PermissionGuard` and `RoleGuard`: presentation guards backed by the centralized permission registry.
 
 ## Navigation
 
-Navigation is configured in `src/lib/permissions/navigation.ts` and filtered through `hasPermission`. Admin sees all enabled placeholder routes, Moderator sees operational routes, and Rider sees Delivery only. Placeholder destinations are visibly labeled as foundation previews and do not claim to implement business operations. Only the workspace home is currently functional.
+Navigation is configured in `src/lib/permissions/navigation.ts` and filtered through `hasPermission`. Admin sees administrative and operational routes, Moderator sees permitted operational routes, and Rider sees assigned delivery workflows. API authorization and database RLS remain mandatory regardless of visible navigation.
 
 ## Responsive behavior
 
@@ -42,4 +42,4 @@ Use semantic landmarks, labelled icon buttons, keyboard-operable controls, visib
 
 ## Performance
 
-The shell keeps module pages as small route components and uses the existing Vite chunking boundary. Future heavy business modules should be lazy-loaded at route boundaries. No new UI dependency was added for Task 05; Lucide and the existing Tailwind/shadcn-compatible primitives are reused.
+Module pages are split at route boundaries to keep the initial client bundle focused. Lucide and the existing Tailwind/shadcn-compatible primitives are reused for consistent controls and icons.

@@ -2,7 +2,7 @@
 
 ## Scope
 
-Task 08 implements organization-scoped customer records, validated search/pagination, customer creation and editing, delivery addresses, default-address switching, internal notes, purchase history, customer totals, and consent display. It does not implement Sales, Communications sending, CRM, or Rider delivery-detail APIs.
+Customer management provides organization-scoped records, validated search/pagination, customer creation and editing, delivery addresses, default-address switching, internal notes, purchase history, customer totals, and consent display. Sales, communications, CRM, and fulfillment workflows use these customer records through their own APIs.
 
 ## Data model and migrations
 
@@ -16,13 +16,13 @@ Customer name and phone are required. Phone input accepts common local/internati
 
 ## Totals and purchase history
 
-Valid purchases are sales belonging to the organization and customer with `fulfillment_status <> 'cancelled'`. Total orders count those sales; total purchase sums `sales.total_amount`; average order value is the numeric average of those totals; last purchase is the maximum sale timestamp. Multiple payments or sale items do not multiply rows because aggregation is performed directly over sales. Returns/refunds are not netted until the future returns/accounting policy defines that formula.
+Valid purchases are sales belonging to the organization and customer with `fulfillment_status <> 'cancelled'`. Total orders count those sales; total purchase sums `sales.total_amount`; average order value is the numeric average of those totals; last purchase is the maximum sale timestamp. Multiple payments or sale items do not multiply rows because aggregation is performed directly over sales. Customer purchase totals are gross sales and are not netted against returns/refunds.
 
 The list RPC performs the same aggregation server-side and supports search by name, normalized phone, or email, purchase activity filters, stable sorting, and pagination. The profile purchase-history endpoint returns an allowlisted sale summary without unrelated customer data.
 
 ## Addresses, notes, and consent
 
-Address writes require the customer and organization relationship through RLS/composite keys. `set_default_customer_address` clears the prior default and sets exactly one active address in one database transaction. Notes are visible to Admin and Moderator users, append-only, and preserve the author. Communication consent is separate from contact availability: absent rows render as `unknown`, never as granted. Consent mutation requires the Admin-only `communications.manage` permission and records updater/source metadata.
+Address writes require the customer and organization relationship through RLS/composite keys. `set_default_customer_address` clears the prior default and sets exactly one active address in one database transaction. Notes are visible to Admin and Moderator users, append-only, and preserve the author. Communication consent is separate from contact availability: absent rows render as `unknown`. Transactional order and delivery emails may be sent for unknown consent, but explicit email opt-outs are honored. Consent mutation requires the Admin-only `communications.manage` permission and records updater/source metadata.
 
 ## API endpoints
 

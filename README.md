@@ -1,23 +1,61 @@
-# SAGA Inventory Management System v2
+# SAGA Inventory
 
-SAGA is a production-oriented inventory and business operations platform for Admin, Moderator, and Rider workflows. Task 01 establishes the application foundation only; business modules, database tables, authentication policies, and RLS are intentionally deferred to later tasks.
+SAGA Inventory is a web-based inventory and operations system for small teams. It supports organization-scoped Admin, Moderator, and Rider workflows.
 
-## Stack
+## Features
 
-React, Vite, TypeScript, Tailwind CSS, shadcn/ui-compatible components, Lucide React, React Router, TanStack Query, React Hook Form, Zod, Supabase, Vercel Functions, Vitest, React Testing Library, and Playwright.
+- Product catalog, categories, stock adjustments, and low-stock reporting
+- Customer, supplier, and seller records
+- Sales, receipts, outstanding balances, and payment collection
+- Packaging and delivery workflows, including rescheduling and cancellation
+- Returns, operational costs, reports, and dashboard summaries
+- Role-based access, audit history, and transactional email/SMS integrations
 
-## Getting Started
+## Technology
 
-```bash
+React, TypeScript, Vite, Tailwind CSS, Supabase Auth and PostgreSQL, Vercel Functions, Vitest, React Testing Library, and Playwright.
+
+## Local Development
+
+Requirements: Node.js 22 or newer and npm. A configured Supabase project is required for sign-in and database-backed features. See [Local Setup](LOCAL_SETUP.md) for organization, Auth, and provider configuration.
+
+```powershell
 npm install
-copy .env.example .env.local
+Copy-Item .env.example .env
+```
+
+Run the API and frontend in separate terminals:
+
+```powershell
+npm run dev:api
+```
+
+```powershell
 npm run dev
 ```
 
-Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run typecheck`, `npm run typecheck:api`, `npm run test`, `npm run test:smoke`, and `npm run format:check`.
+The frontend runs at `http://localhost:5173` and proxies `/api/*` to the local API at `http://127.0.0.1:3000`.
 
-<img width="1920" height="916" alt="image" src="https://github.com/user-attachments/assets/9cac52ae-584f-443d-b3e6-7307654811da" />
+## Checks
 
+```bash
+npm run lint
+npm run typecheck
+npm run typecheck:api
+npm test
+npm run build
+npm run test:smoke
+```
+
+## Deployment
+
+Deploy from the repository root using the Vite preset on Vercel. Configure server-only environment variables in the deployment platform; never place service-role or provider credentials in `VITE_*` variables. Review [Deployment](docs/DEPLOYMENT.md), [Environment](docs/ENVIRONMENT.md), and the [Vercel release checklist](docs/VERCEL_DEPLOYMENT.md) before launch.
+
+The included tests and local checks do not replace staging verification of RLS, tenant boundaries, provider delivery, backups, and deployed authentication.
+
+## License
+
+This project is released under the [MIT License](LICENSE).
 
 ## Documentation
 
@@ -41,9 +79,10 @@ Available scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run l
 - [Communications](docs/COMMUNICATIONS.md)
 - [Settings, user administration, and audit](docs/SETTINGS_ADMIN_AUDIT.md)
 - [Project status](docs/PROJECT_STATUS.md)
+- [Production readiness](docs/PRODUCTION_READINESS_REPORT.md)
 - [Local Supabase and frontend setup](LOCAL_SETUP.md)
 
-## Foundation endpoints
+## Health endpoints
 
 - `GET /api/health` reports process health and a request ID.
 - `GET /api/ready` verifies required server configuration and database connectivity without returning connection details.

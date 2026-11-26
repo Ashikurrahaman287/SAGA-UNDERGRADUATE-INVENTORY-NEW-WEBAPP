@@ -2,7 +2,7 @@
 
 ## Scope
 
-Task 13 adds organization-scoped return and refund workflows against persisted sales. It reuses existing `returns`, `return_items`, `refunds`, `sale_items`, `products`, `stock_movements`, `payments`, `audit_logs`, and sale snapshots. It does not implement accounting ledgers or Dashboard analytics.
+Returns and refunds are organization-scoped workflows against persisted sales. They use `returns`, `return_items`, `refunds`, `sale_items`, `products`, `stock_movements`, `payments`, `audit_logs`, and sale snapshots. The product does not provide a general-purpose double-entry accounting ledger.
 
 ## Role policy
 

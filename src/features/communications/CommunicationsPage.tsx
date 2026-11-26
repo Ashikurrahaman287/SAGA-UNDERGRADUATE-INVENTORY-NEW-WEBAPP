@@ -84,10 +84,10 @@ export function CommunicationsPage(): ReactElement {
     setError('');
     setSentMessage('');
     const recipientList = recipients
-      .split(/[,+\n]/)
+      .split(channel === 'sms' ? /[,+\n]/ : /[,;\n]/)
       .map((recipient) => recipient.trim())
       .filter(Boolean)
-      .map((recipient) => ({ phone: recipient }));
+      .map((recipient) => channel === 'email' ? { email: recipient } : { phone: recipient });
     const response = await fetch('/api/communications/send', {
       method: 'POST',
       credentials: 'same-origin',
@@ -105,10 +105,16 @@ export function CommunicationsPage(): ReactElement {
       const body = (await response.json()) as { error?: { message?: string } };
       setError(body.error?.message || 'Communication could not be sent.');
     } else {
-      const body = (await response.json()) as { data: { status: string; recipients: string[] } };
-      setSentMessage(
-        `${body.data.status === 'sent' ? 'Provider accepted' : 'Provider reported a failure'} for ${body.data.recipients.length} recipient(s).`,
-      );
+      const body = (await response.json()) as { data: {
+        status: string;
+        recipients: string[];
+        sentCount?: number;
+        failedCount?: number;
+        rejectedCount?: number;
+      } };
+      setSentMessage(channel === 'email'
+        ? `${body.data.sentCount || 0} sent, ${body.data.failedCount || 0} failed, ${body.data.rejectedCount || 0} skipped without granted email consent.`
+        : `${body.data.status === 'sent' ? 'Provider accepted' : 'Provider reported a failure'} for ${body.data.recipients.length} recipient(s).`);
       await logs.refetch();
     }
     setSending(false);
@@ -199,7 +205,7 @@ export function CommunicationsPage(): ReactElement {
               value={recipients}
               onChange={(event) => setRecipients(event.target.value)}
               rows={3}
-              placeholder="01700000000+01800000000 or one number per line"
+              placeholder={channel === 'email' ? 'customer@example.com, one address per line' : '01700000000+01800000000 or one number per line'}
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             />
           </label>
@@ -243,8 +249,7 @@ export function CommunicationsPage(): ReactElement {
           </Button>
           {channel === 'email' && (
             <p className="mt-3 flex items-center gap-2 text-xs text-amber-700">
-              <ShieldCheck size={14} /> Email dispatch is not live until a server email provider is
-              configured.
+              <ShieldCheck size={14} /> Manual email is limited to stored customers with granted email consent.
             </p>
           )}
         </section>
