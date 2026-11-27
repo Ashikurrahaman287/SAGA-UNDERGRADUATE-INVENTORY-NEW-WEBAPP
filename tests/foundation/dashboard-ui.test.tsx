@@ -44,3 +44,41 @@ it('renders persisted-data empty states and discloses unavailable net profit', a
   expect(await screen.findByText('No sales in this period')).toBeInTheDocument();
   expect(screen.getAllByText('Unavailable')).toHaveLength(2);
 });
+
+it('shows a revenue trend and low-stock products from the persisted summary', async () => {
+  const dashboard = {
+    ...summary,
+    currency: 'BDT',
+    kpis: { ...summary.kpis, stockValue: '1500.00', lowStockCount: 1 },
+    salesTrend: [{ day: '2026-11-26', sales_count: 2, revenue: '620.00' }],
+    lowStockProducts: [
+      {
+        id: 'product-1',
+        product_name: 'Wireless Headphones',
+        sku: 'WH-01',
+        quantity: '5',
+        low_stock_threshold: '10',
+        unit: 'units',
+      },
+    ],
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: dashboard, requestId: 'dashboard-stock-test' }), {
+        status: 200,
+      }),
+    ),
+  );
+  render(
+    <MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <DashboardPage />
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByRole('img', { name: 'Daily sales revenue trend' })).toBeInTheDocument();
+  expect(screen.getByText('Stock value')).toBeInTheDocument();
+  expect(screen.getByText('Wireless Headphones')).toBeInTheDocument();
+  expect(screen.getByText('BDT 1,500.00')).toBeInTheDocument();
+});

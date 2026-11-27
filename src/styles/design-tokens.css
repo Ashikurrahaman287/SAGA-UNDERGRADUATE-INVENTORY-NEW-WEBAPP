@@ -1,11 +1,11 @@
 :root {
-  --color-page: #f8fafc;
+  --color-page: #f5f8ff;
   --color-sidebar: #09090b;
-  --color-primary: #2563eb;
-  --color-primary-soft: #eff6ff;
-  --color-ink: #0f172a;
+  --color-primary: #1762dc;
+  --color-primary-soft: #eaf2ff;
+  --color-ink: #14213d;
   --color-muted: #64748b;
-  --color-border: #e2e8f0;
+  --color-border: #e1e9f8;
   --color-success: #16a34a;
   --color-warning: #d97706;
   --color-danger: #dc2626;

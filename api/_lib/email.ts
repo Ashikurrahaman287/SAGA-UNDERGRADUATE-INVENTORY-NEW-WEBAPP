@@ -40,6 +40,41 @@ function money(value: number, currency: string): string {
   return new Intl.NumberFormat('en-BD', { style: 'currency', currency, minimumFractionDigits: 2 }).format(value);
 }
 
+function appendEmailFooter(html: string): string {
+  if (html.includes('id="saga-email-footer"')) return html;
+  const footer = `<footer id="saga-email-footer" style="box-sizing:border-box;width:100%;max-width:640px;margin:0 auto;padding:24px 20px;background:#14233d;color:#fff;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:20px">
+    <strong style="font-size:14px;letter-spacing:.5px">| UNDERGRADUATE HUB |</strong>
+    <p style="margin:10px 0 0;color:#dbeafe">| TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |</p>
+    <p style="margin:0;color:#dbeafe">| BACKED BY - AGT VENTURE |</p>
+    <p style="margin:12px 0 0">
+      <a href="https://www.facebook.com/undergraduate.hub" style="color:#bfdbfe">Facebook</a> |
+      <a href="https://instagram.com/undergraduatehub_Com" style="color:#bfdbfe">Instagram</a> |
+      <a href="https://www.linkedin.com/company/undergraduate-hub" style="color:#bfdbfe">LinkedIn</a> |
+      <a href="https://x.com/undergra_hub" style="color:#bfdbfe">X.com</a>
+    </p>
+    <p style="margin:8px 0 0">Need Help? <a href="mailto:support@undergraduatehub.com" style="color:#bfdbfe">support@undergraduatehub.com</a></p>
+    <p style="margin:10px 0 0;color:#cbd5e1;font-size:11px">This is an automated email. Please do not reply.</p>
+  </footer>`;
+  const existingFooter = /<footer\b[^>]*>[\s\S]*?<\/footer>/i;
+  if (existingFooter.test(html)) return html.replace(existingFooter, footer);
+  const closingBody = /<\/body\s*>/i;
+  return closingBody.test(html) ? html.replace(closingBody, `${footer}</body>`) : `${html}${footer}`;
+}
+
+function appendEmailFooterText(text: string): string {
+  const footer = `  | UNDERGRADUATE HUB |
+  | TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |
+  | BACKED BY - AGT VENTURE |
+Facebook: https://www.facebook.com/undergraduate.hub
+Instagram: https://instagram.com/undergraduatehub_Com
+LinkedIn: https://www.linkedin.com/company/undergraduate-hub
+X.com: https://x.com/undergra_hub
+Need Help? support@undergraduatehub.com
+This is an automated email. Please do not reply.`;
+  if (text.includes(footer)) return text;
+  return `${text.trimEnd()}\n\n${footer}`;
+}
+
 export function renderLegacyOrderEmail(data: OrderEmailData): string {
   const brand = escapeHtml(data.businessName || 'UNDERGRADUATE HUB');
   const greeting = escapeHtml((data.customerName.trim().split(/\s+/)[0] || 'Customer'));
@@ -113,6 +148,8 @@ export function renderCommunicationEmail(data: { businessName: string; message: 
 
 export async function sendEmail(params: { to: string; subject: string; html: string; text: string }): Promise<{ sent: boolean; provider: string; messageId?: string; error?: string }> {
   let provider = process.env.EMAIL_PROVIDER || 'none';
+  const html = appendEmailFooter(params.html);
+  const text = appendEmailFooterText(params.text);
   try {
     const env = getServerEnv();
     provider = env.EMAIL_PROVIDER || 'none';
@@ -139,8 +176,8 @@ export async function sendEmail(params: { to: string; subject: string; html: str
         from: senderName ? { name: senderName, address: from } : from,
         to: params.to,
         subject: params.subject,
-        html: params.html,
-        text: params.text,
+        html,
+        text,
       });
       return { sent: true, provider, messageId: result.messageId };
     }
@@ -155,15 +192,15 @@ export async function sendEmail(params: { to: string; subject: string; html: str
     if (provider === 'resend') {
       url = 'https://api.resend.com/emails';
       headers.Authorization = `Bearer ${apiKey}`;
-      body = { from: formattedFrom, to: [params.to], subject: params.subject, html: params.html, text: params.text };
+      body = { from: formattedFrom, to: [params.to], subject: params.subject, html, text };
     } else if (provider === 'postmark') {
       url = 'https://api.postmarkapp.com/email';
       headers['X-Postmark-Server-Token'] = apiKey;
-      body = { From: formattedFrom, To: params.to, Subject: params.subject, HtmlBody: params.html, TextBody: params.text, MessageStream: 'outbound' };
+      body = { From: formattedFrom, To: params.to, Subject: params.subject, HtmlBody: html, TextBody: text, MessageStream: 'outbound' };
     } else if (provider === 'sendgrid') {
       url = 'https://api.sendgrid.com/v3/mail/send';
       headers.Authorization = `Bearer ${apiKey}`;
-      body = { personalizations: [{ to: [{ email: params.to }] }], from: { email: from, name: senderName }, subject: params.subject, content: [{ type: 'text/plain', value: params.text }, { type: 'text/html', value: params.html }] };
+      body = { personalizations: [{ to: [{ email: params.to }] }], from: { email: from, name: senderName }, subject: params.subject, content: [{ type: 'text/plain', value: text }, { type: 'text/html', value: html }] };
     } else return { sent: false, provider, error: 'Configured email provider is unsupported for API delivery.' };
 
     const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });

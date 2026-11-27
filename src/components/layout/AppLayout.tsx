@@ -40,7 +40,7 @@ export function AppLayout(): ReactElement {
           onOpenMobile={() => setMobileOpen(true)}
           pathname={location.pathname}
         />
-        <main className="min-h-[calc(100vh-72px)]">
+        <main className="min-h-[calc(100vh-72px)] bg-[radial-gradient(ellipse_at_top_right,_rgba(208,225,255,0.5),_transparent_44%),var(--color-page)]">
           {routeAllowed ? (
             <Outlet />
           ) : (

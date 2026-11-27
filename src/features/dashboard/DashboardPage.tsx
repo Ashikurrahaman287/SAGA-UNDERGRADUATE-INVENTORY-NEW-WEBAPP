@@ -90,14 +90,14 @@ export function DashboardPage(): ReactElement {
   const summary = query.data?.data.data;
   const currency = summary?.currency || 'USD';
   return (
-    <PageContainer>
+    <PageContainer className="max-w-[1600px] px-4 py-6 sm:px-7 lg:px-8">
       <PageHeader
-        eyebrow="Admin overview"
+        eyebrow="  Welcome back"
         title="Dashboard"
-        description="Business overview and performance"
+        description="Track your business performance at a glance."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
+            <label className="flex h-10 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-slate-600 shadow-sm">
               <CalendarDays size={16} />
               <span className="sr-only">Date range</span>
               <select
@@ -117,7 +117,7 @@ export function DashboardPage(): ReactElement {
             </label>
             <Button
               onClick={() => void query.refetch()}
-              className="border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              className="h-10 rounded-xl border border-[var(--color-border)] bg-white text-slate-700 shadow-sm hover:bg-blue-50"
               aria-label="Refresh dashboard"
             >
               <RefreshCw size={16} className={query.isFetching ? 'animate-spin' : ''} />
@@ -126,11 +126,11 @@ export function DashboardPage(): ReactElement {
           </div>
         }
       />
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <span>
           {summary
             ? `Business timezone: ${summary.period.timezone}`
-            : 'Metrics are calculated from persisted records.'}
+            : 'Metrics use persisted business records.'}
         </span>
         {query.data?.requestId && (
           <span className="flex items-center gap-1">
@@ -178,7 +178,7 @@ function DashboardLoading(): ReactElement {
       {Array.from({ length: 8 }, (_, index) => (
         <div
           key={index}
-          className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white"
+          className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-white"
         />
       ))}
     </div>
@@ -194,7 +194,7 @@ function DashboardContent({
   const kpi = summary.kpis;
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
         <Kpi
           icon={<ShoppingCart />}
           label="Total sales"
@@ -207,7 +207,7 @@ function DashboardContent({
           icon={<DollarSign />}
           label="Revenue"
           value={money(kpi.revenue, currency)}
-          detail="Recognized valid sales value"
+          detail="Recognized sales value"
           href="/app/sales/history"
           tone="green"
         />
@@ -215,7 +215,7 @@ function DashboardContent({
           icon={<Wallet />}
           label="Payments due"
           value={money(kpi.paymentsDue, currency)}
-          detail="Outstanding sale balances"
+          detail="Outstanding balances"
           href="/app/payments"
           tone="amber"
         />
@@ -227,23 +227,20 @@ function DashboardContent({
           href="/app/reports"
           tone="violet"
         />
-        <Kpi
-          icon={<Package />}
-          label="Stock value"
-          value={money(kpi.stockValue, currency)}
-          detail="Current quantity × cost price"
-          href="/app/inventory"
-          tone="blue"
-        />
-        <Kpi
-          icon={<AlertTriangle />}
-          label="Low stock"
-          value={quantity(kpi.lowStockCount)}
-          detail="Products below threshold"
-          href="/app/inventory"
-          tone="red"
-        />
-        <Kpi
+      </div>
+      <div className="mt-5 grid gap-4 xl:grid-cols-[1.55fr_1fr]">
+        <Panel title="Sales overview" description="Revenue from valid sales by business day">
+          <TrendChart items={summary.salesTrend} currency={currency} />
+        </Panel>
+        <Panel
+          title="Stock overview"
+          description="Current inventory and products that need attention"
+        >
+          <StockOverview summary={summary} currency={currency} />
+        </Panel>
+      </div>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:max-w-2xl">
+        <MiniKpi
           icon={<RotateCcw />}
           label="Returns"
           value={quantity(kpi.returnCount)}
@@ -251,20 +248,19 @@ function DashboardContent({
           href="/app/returns"
           tone="amber"
         />
-        <Kpi
+        <MiniKpi
           icon={<BarChart3 />}
           label="Net profit"
           value={money(kpi.netProfit, currency)}
-          detail={kpi.netProfit === null ? 'Accounting inputs unavailable' : `Gross - ${money(kpi.operationalCost || 0, currency)} operating - ${money(kpi.packagingCost || 0, currency)} packaging`}
           href="/app/accounting"
-          tone="slate"
+          tone="green"
         />
       </div>
-      <div className="grid gap-5 xl:grid-cols-[1.4fr_0.8fr]">
-        <Panel title="Sales and revenue trend" description="Valid sales grouped by business day">
-          <TrendChart items={summary.salesTrend} currency={currency} />
+      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+        <Panel title="Top-selling products" description="Best-performing products for this period">
+          <TopProducts items={summary.topProducts} />
         </Panel>
-        <Panel title="Payment overview" description="Persisted sale payment states">
+        <Panel title="Payment overview" description="Sales grouped by their payment status">
           <Breakdown
             items={summary.paymentOverview.map((item) => ({
               label: statusLabel(item.payment_status),
@@ -273,9 +269,10 @@ function DashboardContent({
             }))}
           />
         </Panel>
-      </div>
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Fulfillment overview" description="Valid orders by current fulfillment stage">
+        <Panel
+          title="Fulfillment overview"
+          description="Orders grouped by their current fulfillment stage"
+        >
           <Breakdown
             items={summary.fulfillmentOverview.map((item) => ({
               label: statusLabel(item.fulfillment_status),
@@ -284,13 +281,10 @@ function DashboardContent({
             empty="No orders in this period."
           />
         </Panel>
-        <Panel title="Top-selling products" description="Quantity sold from valid sale items">
-          <TopProducts items={summary.topProducts} />
-        </Panel>
       </div>
       <PageSection
         title="Low-stock products"
-        description="The first products at or below their configured threshold."
+        description="Review current stock levels and restock thresholds."
       >
         <LowStockTable items={summary.lowStockProducts} />
       </PageSection>
@@ -324,18 +318,65 @@ function Kpi({
   return (
     <Link
       to={href}
-      className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+      className="group relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_4px_18px_rgba(30,64,175,0.04)] transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
     >
-      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${toneClass}`}>
-        {icon}
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toneClass}`}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-slate-500">{label}</p>
+          <p className="mt-0.5 truncate text-xl font-bold tracking-tight text-slate-900">{value}</p>
+        </div>
       </div>
-      <p className="mt-4 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{label}</p>
-      <p className="mt-2 text-xl font-semibold tracking-tight text-slate-950">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{detail}</p>
-      <ArrowUpRight
-        size={15}
-        className="mt-3 text-slate-300 transition-colors group-hover:text-blue-600"
-      />
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+        <p className="truncate text-xs text-slate-500">{detail}</p>
+        <ArrowUpRight
+          size={15}
+          className="shrink-0 text-slate-300 transition-colors group-hover:text-blue-600"
+        />
+      </div>
+    </Link>
+  );
+}
+function MiniKpi({
+  icon,
+  label,
+  value,
+  detail,
+  href,
+  tone,
+}: {
+  icon: ReactElement;
+  label: string;
+  value: string;
+  detail?: string;
+  href: string;
+  tone: string;
+}): ReactElement {
+  const tones: Record<string, string> = {
+    blue: 'bg-blue-50 text-blue-700',
+    green: 'bg-emerald-50 text-emerald-700',
+    amber: 'bg-amber-50 text-amber-700',
+    red: 'bg-rose-50 text-rose-700',
+  };
+  return (
+    <Link
+      to={href}
+      className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white/80 p-3.5 transition hover:bg-white hover:shadow-sm"
+    >
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tones[tone]}`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs text-slate-500">{label}</span>
+        <span className="block truncate text-sm font-bold text-slate-800">{value}</span>
+        {detail && <span className="block truncate text-[11px] text-slate-500">{detail}</span>}
+      </span>
     </Link>
   );
 }
@@ -349,10 +390,10 @@ function Panel({
   children: ReactElement;
 }): ReactElement {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5">
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
+    <section className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_4px_18px_rgba(30,64,175,0.04)] sm:p-5">
+      <div className="mb-4">
+        <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+        <p className="mt-1 text-xs text-slate-500">{description}</p>
       </div>
       {children}
     </section>
@@ -372,22 +413,113 @@ function TrendChart({
         description="When valid sales are recorded, the daily trend will appear here."
       />
     );
-  const max = Math.max(...items.map((item) => Number(item.revenue)), 1);
+  const values = items.map((item) => Number(item.revenue));
+  const max = Math.max(...values, 1);
+  const points = values.map((value, index) => ({
+    x: values.length === 1 ? 50 : 8 + (index / (values.length - 1)) * 984,
+    y: 172 - (value / max) * 142,
+  }));
+  const path = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x},${point.y}`).join(' ');
+  const firstDay = new Date(`${items[0].day}T00:00:00`);
+  const lastDay = new Date(`${items[items.length - 1].day}T00:00:00`);
   return (
-    <div className="flex h-56 items-end gap-2 overflow-x-auto pb-6">
-      {items.map((item) => (
-        <div
-          key={item.day}
-          className="group flex min-w-8 flex-1 flex-col items-center justify-end gap-2"
+    <div className="min-w-0">
+      <div className="mb-3 flex items-baseline gap-2">
+        <span className="text-2xl font-bold tracking-tight text-slate-900">
+          {money(
+            items.reduce((total, item) => total + Number(item.revenue), 0),
+            currency,
+          )}
+        </span>
+        <span className="text-xs text-slate-500">revenue in selected period</span>
+      </div>
+      <div className="overflow-hidden">
+        <svg
+          viewBox="0 0 1000 200"
+          role="img"
+          aria-label="Daily sales revenue trend"
+          className="h-48 w-full overflow-visible"
         >
-          <div
-            className="relative w-full rounded-t-md bg-blue-100 transition-colors group-hover:bg-blue-500"
-            style={{ height: `${Math.max(4, (Number(item.revenue) / max) * 170)}px` }}
-            title={`${item.day}: ${money(item.revenue, currency)}`}
+          <defs>
+            <linearGradient id="sales-area-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#3182f6" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#3182f6" stopOpacity="0.015" />
+            </linearGradient>
+          </defs>
+          {[30, 75, 120, 165].map((y) => (
+            <line key={y} x1="8" x2="992" y1={y} y2={y} stroke="#e8eef8" strokeDasharray="4 5" />
+          ))}
+          <path d={`${path} L 992,180 L 8,180 Z`} fill="url(#sales-area-fill)" />
+          <path
+            d={path}
+            fill="none"
+            stroke="#2474ed"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="4"
+            vectorEffect="non-scaling-stroke"
           />
-          <span className="text-[10px] text-slate-400">{item.day.slice(5)}</span>
+          {points.length > 0 && (
+            <circle
+              cx={points[points.length - 1].x}
+              cy={points[points.length - 1].y}
+              r="6"
+              fill="#2474ed"
+              stroke="white"
+              strokeWidth="3"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+        </svg>
+      </div>
+      <div className="mt-1 flex justify-between text-[11px] font-medium text-slate-500">
+        <span>{firstDay.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+        {items.length > 2 && (
+          <span>{items[Math.floor(items.length / 2)].day.slice(5).replace('-', '/')}</span>
+        )}
+        <span>{lastDay.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+      </div>
+    </div>
+  );
+}
+function StockOverview({
+  summary,
+  currency,
+}: {
+  summary: DashboardSummary;
+  currency: string;
+}): ReactElement {
+  return (
+    <div className="grid min-w-0 gap-3">
+      <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-blue-50/70 p-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Stock value
+          </p>
+          <p className="mt-1 whitespace-nowrap text-xl font-bold leading-tight tracking-tight text-slate-900 sm:text-2xl 2xl:text-3xl">
+            {money(summary.kpis.stockValue, currency)}
+          </p>
         </div>
-      ))}
+        <Link
+          to="/app/inventory"
+          className="shrink-0 rounded-lg bg-white p-2.5 text-blue-700 shadow-sm transition hover:bg-blue-100"
+          aria-label="Open inventory"
+        >
+          <Package size={20} />
+        </Link>
+      </div>
+      <Link
+        to="/app/inventory"
+        className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-amber-50/70 p-4 transition hover:bg-amber-50"
+      >
+        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium text-slate-500">
+          <AlertTriangle size={14} className="shrink-0 text-amber-500" />
+          Products below threshold
+        </p>
+        <span className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-lg font-bold text-amber-700 shadow-sm">
+          {quantity(summary.kpis.lowStockCount)}
+        </span>
+      </Link>
     </div>
   );
 }

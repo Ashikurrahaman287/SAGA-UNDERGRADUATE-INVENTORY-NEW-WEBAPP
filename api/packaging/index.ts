@@ -4,6 +4,7 @@ import { sendJson } from '../lib/response.js';
 import { sendAuthFailure, methodNotAllowed } from '../lib/auth/http.js';
 import { requirePermission } from '../lib/auth/authorization-context.js';
 import { permissions } from '../../src/lib/permissions/permission-registry.js';
+import { isPackagingWorkflowActive } from '../../src/features/fulfillment/delivery-date.js';
 
 export default async function packaging(
   request: VercelRequest,
@@ -17,7 +18,7 @@ export default async function packaging(
     let query = context.client
       .from('packaging_records')
       .select(
-        'id, sale_id, packaging_status, packaging_cost, packed_by, packed_at, ready_at, updated_at, sales(id, receipt_number, customer_id, fulfillment_status, payment_status, delivery_address_snapshot, customers(name, phone))',
+        'id, sale_id, packaging_status, packaging_cost, packed_by, packed_at, ready_at, updated_at, sales(id, receipt_number, customer_id, fulfillment_status, payment_status, delivery_address_snapshot, customers(name, phone), delivery_assignments(status, delivered_at))',
         { count: 'exact' },
       )
       .eq('organization_id', context.organization.id)
@@ -30,10 +31,22 @@ export default async function packaging(
     }
     const result = await query;
     if (result.error) throw result.error;
+    const data = (result.data || []).filter((row) => {
+      const relation = row.sales;
+      const sale = Array.isArray(relation) ? relation[0] : relation;
+      if (!sale) return false;
+      const deliveryRelation = sale.delivery_assignments;
+      const assignments = Array.isArray(deliveryRelation)
+        ? deliveryRelation
+        : deliveryRelation
+          ? [deliveryRelation]
+          : [];
+      return isPackagingWorkflowActive(sale.fulfillment_status, assignments);
+    });
     sendJson(
       response,
       200,
-      { data: result.data || [], requestId: getRequestId(request) },
+      { data, requestId: getRequestId(request) },
       getRequestId(request),
     );
   } catch (error) {

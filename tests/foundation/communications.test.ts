@@ -55,6 +55,12 @@ describe('communications provider safety', () => {
       from: { name: 'UNDERGRADUATE HUB', address: 'orders@example.test' },
       to: 'customer@example.test',
       subject: 'Delivery reminder',
+      html: expect.stringContaining('| TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |'),
+      text: expect.stringContaining('| TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |'),
+    }));
+    expect(smtpMock.sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      html: expect.stringContaining('https://www.facebook.com/undergraduate.hub'),
+      text: expect.stringContaining('Need Help? support@undergraduatehub.com'),
     }));
     vi.unstubAllEnvs();
   });
