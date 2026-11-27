@@ -62,6 +62,20 @@ describe('communications provider safety', () => {
       html: expect.stringContaining('https://www.facebook.com/undergraduate.hub'),
       text: expect.stringContaining('Need Help? support@undergraduatehub.com'),
     }));
+    for (const socialUrl of [
+      'https://www.facebook.com/undergraduate.hub',
+      'https://instagram.com/undergraduatehub_Com',
+      'https://www.linkedin.com/company/undergraduate-hub',
+      'https://x.com/undergra_hub',
+    ]) {
+      expect(smtpMock.sendMail).toHaveBeenCalledWith(expect.objectContaining({
+        html: expect.stringContaining(socialUrl),
+      }));
+    }
+    expect(smtpMock.sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      html: expect.stringContaining('mailto:support@undergraduatehub.com'),
+      text: expect.stringContaining('This is an automated email. Please do not reply.'),
+    }));
     vi.unstubAllEnvs();
   });
 

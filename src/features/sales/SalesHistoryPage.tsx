@@ -1,4 +1,4 @@
-import { Filter, RotateCcw, Search } from 'lucide-react';
+import { Filter, RotateCcw, Search, XCircle } from 'lucide-react';
 import { useEffect, useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -49,6 +49,12 @@ export function SalesHistoryPage(): ReactElement {
   const [direction, setDirection] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [saleToCancel, setSaleToCancel] = useState<SaleRow | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancellationError, setCancellationError] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [notice, setNotice] = useState('');
+  const isAdmin = auth.session?.role === 'admin';
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setDebouncedSearch(search);
@@ -80,6 +86,36 @@ export function SalesHistoryPage(): ReactElement {
   const rows = query.data?.data.data || [];
   const total = query.data?.data.total || 0;
   const summary = query.data?.data.summary;
+  async function confirmCancellation(): Promise<void> {
+    if (!saleToCancel || cancelling) return;
+    setCancelling(true);
+    setCancellationError('');
+    try {
+      await apiFetch(`/api/deliveries/${saleToCancel.id}/actions`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': auth.csrfToken,
+        },
+        body: JSON.stringify({
+          action: 'cancel',
+          notes: cancellationReason.trim(),
+          idempotencyKey: crypto.randomUUID(),
+        }),
+      });
+      setNotice(`${saleToCancel.receipt_number} cancelled and stock restored.`);
+      setSaleToCancel(null);
+      setCancellationReason('');
+      void query.refetch();
+    } catch (error) {
+      setCancellationError(
+        error instanceof Error ? error.message : 'The sale could not be cancelled.',
+      );
+    } finally {
+      setCancelling(false);
+    }
+  }
   function money(value: number | string): string {
     return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(value));
   }
@@ -166,6 +202,7 @@ export function SalesHistoryPage(): ReactElement {
               <option value="ready_for_delivery">Ready for delivery</option>
               <option value="out_for_delivery">Out for delivery</option>
               <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </FilterField>
           <FilterField label="Customer ID">
@@ -257,7 +294,7 @@ export function SalesHistoryPage(): ReactElement {
         <ErrorState onRetry={() => void query.refetch()} />
       ) : rows.length ? (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full min-w-[900px] text-left text-sm">
+          <table className="w-full min-w-[1020px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-5 py-3">Receipt</th>
@@ -270,6 +307,7 @@ export function SalesHistoryPage(): ReactElement {
                 <th className="px-5 py-3">Due</th>
                 <th className="px-5 py-3">Payment</th>
                 <th className="px-5 py-3">Fulfillment</th>
+                {isAdmin && <th className="px-5 py-3">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -307,6 +345,64 @@ export function SalesHistoryPage(): ReactElement {
                   <td className="px-5 py-4 capitalize text-slate-600">
                     {row.fulfillment_status.replaceAll('_', ' ')}
                   </td>
+                  {isAdmin && (
+                    <td className="px-5 py-4">
+                      {!['cancelled', 'delivered'].includes(row.fulfillment_status) &&
+                        (saleToCancel?.id === row.id ? (
+                          <div className="w-64 space-y-2 rounded-lg border border-rose-200 bg-rose-50 p-3">
+                            <p className="text-xs font-semibold text-rose-900">
+                              Cancel and restock this order?
+                            </p>
+                            <label className="block text-xs text-slate-600">
+                              Reason (optional)
+                              <textarea
+                                value={cancellationReason}
+                                onChange={(event) => setCancellationReason(event.target.value)}
+                                maxLength={1000}
+                                rows={2}
+                                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs"
+                              />
+                            </label>
+                            {cancellationError && (
+                              <p role="alert" className="text-xs text-rose-700">
+                                {cancellationError}
+                              </p>
+                            )}
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                disabled={cancelling}
+                                onClick={() => setSaleToCancel(null)}
+                                className="border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                              >
+                                Keep
+                              </Button>
+                              <Button
+                                type="button"
+                                disabled={cancelling}
+                                onClick={() => void confirmCancellation()}
+                                className="bg-rose-700 px-2 py-1 text-xs text-white hover:bg-rose-800"
+                              >
+                                {cancelling ? 'Cancelling…' : 'Confirm'}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            disabled={cancelling}
+                            onClick={() => {
+                              setSaleToCancel(row);
+                              setCancellationReason('');
+                              setCancellationError('');
+                            }}
+                            className="whitespace-nowrap border border-rose-200 bg-rose-50 px-3 py-1.5 text-rose-700 hover:bg-rose-100"
+                          >
+                            <XCircle size={15} className="mr-1.5" />
+                            Cancel order
+                          </Button>
+                        ))}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -319,6 +415,22 @@ export function SalesHistoryPage(): ReactElement {
         />
       )}
       <Pagination page={page} pageSize={25} total={total} onPage={setPage} />
+      {notice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-5 right-5 z-40 max-w-md rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-lg"
+        >
+          {notice}
+          <button
+            type="button"
+            className="ml-3 font-semibold underline"
+            onClick={() => setNotice('')}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </PageContainer>
   );
 }
