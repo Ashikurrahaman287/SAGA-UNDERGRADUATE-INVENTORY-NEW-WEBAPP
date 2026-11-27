@@ -42,19 +42,25 @@ function money(value: number, currency: string): string {
 
 function appendEmailFooter(html: string): string {
   if (html.includes('id="saga-email-footer"')) return html;
-  const footer = `<footer id="saga-email-footer" style="box-sizing:border-box;width:100%;max-width:640px;margin:0 auto;padding:24px 20px;background:#14233d;color:#fff;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:20px">
-    <strong style="font-size:14px;letter-spacing:.5px">| UNDERGRADUATE HUB |</strong>
-    <p style="margin:10px 0 0;color:#dbeafe">| TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |</p>
-    <p style="margin:0;color:#dbeafe">| BACKED BY - AGT VENTURE |</p>
-    <p style="margin:12px 0 0">
-      <a href="https://www.facebook.com/undergraduate.hub" style="color:#bfdbfe">Facebook</a> |
-      <a href="https://instagram.com/undergraduatehub_Com" style="color:#bfdbfe">Instagram</a> |
-      <a href="https://www.linkedin.com/company/undergraduate-hub" style="color:#bfdbfe">LinkedIn</a> |
-      <a href="https://x.com/undergra_hub" style="color:#bfdbfe">X.com</a>
-    </p>
-    <p style="margin:8px 0 0">Need Help? <a href="mailto:support@undergraduatehub.com" style="color:#bfdbfe">support@undergraduatehub.com</a></p>
-    <p style="margin:10px 0 0;color:#cbd5e1;font-size:11px">This is an automated email. Please do not reply.</p>
-  </footer>`;
+  const footer = `<table id="saga-email-footer" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse">
+    <tr><td align="center" style="padding:0 12px 24px">
+      <table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px;background:#14233d;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:20px">
+        <tr><td align="center" style="padding:24px 20px">
+          <p style="margin:0;font-size:14px;letter-spacing:.5px;font-weight:bold">| UNDERGRADUATE HUB |</p>
+          <p style="margin:10px 0 0;color:#dbeafe">| TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |</p>
+          <p style="margin:0;color:#dbeafe">| BACKED BY - AGT VENTURE |</p>
+          <p style="margin:12px 0 0">
+            <a href="https://www.facebook.com/undergraduate.hub" style="color:#bfdbfe">Facebook</a> |
+            <a href="https://instagram.com/undergraduatehub_Com" style="color:#bfdbfe">Instagram</a> |
+            <a href="https://www.linkedin.com/company/undergraduate-hub" style="color:#bfdbfe">LinkedIn</a> |
+            <a href="https://x.com/undergra_hub" style="color:#bfdbfe">X.com</a>
+          </p>
+          <p style="margin:8px 0 0">Need Help? <a href="mailto:support@undergraduatehub.com" style="color:#bfdbfe">support@undergraduatehub.com</a></p>
+          <p style="margin:10px 0 0;color:#cbd5e1;font-size:11px">This is an automated email. Please do not reply.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>`;
   const existingFooter = /<footer\b[^>]*>[\s\S]*?<\/footer>/i;
   if (existingFooter.test(html)) return html.replace(existingFooter, footer);
   const closingBody = /<\/body\s*>/i;
@@ -62,9 +68,9 @@ function appendEmailFooter(html: string): string {
 }
 
 function appendEmailFooterText(text: string): string {
-  const footer = `  | UNDERGRADUATE HUB |
-  | TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |
-  | BACKED BY - AGT VENTURE |
+  const footer = `| UNDERGRADUATE HUB |
+| TECHNOLOGY PARTNER - SAGA LAB | SPUDBLOCKS |
+| BACKED BY - AGT VENTURE |
 Facebook: https://www.facebook.com/undergraduate.hub
 Instagram: https://instagram.com/undergraduatehub_Com
 LinkedIn: https://www.linkedin.com/company/undergraduate-hub

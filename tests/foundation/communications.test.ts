@@ -79,6 +79,55 @@ describe('communications provider safety', () => {
     vi.unstubAllEnvs();
   });
 
+  it('includes the branded footer in order email sent through an API provider', async () => {
+    vi.stubEnv('EMAIL_PROVIDER', 'resend');
+    vi.stubEnv('EMAIL_API_KEY', 'test-api-key');
+    vi.stubEnv('EMAIL_FROM_NAME', 'UNDERGRADUATE HUB');
+    vi.stubEnv('EMAIL_FROM_ADDRESS', 'orders@example.test');
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'resend-message-123' }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const html = renderOrderEmail({
+        customerName: 'Sam Customer',
+        receiptNumber: 'SAGA-20261128-4821763',
+        createdAt: '2026-11-28T10:00:00.000Z',
+        items: [{ name: 'Test item', sku: 'SKU-1', quantity: 1, unitPrice: 100, lineTotal: 100 }],
+        subtotal: 100,
+        discount: 0,
+        deliveryFee: 0,
+        total: 100,
+        paid: 100,
+        due: 0,
+        currency: 'BDT',
+      });
+      await expect(sendEmail({
+        to: 'customer@example.test',
+        subject: 'Order confirmation',
+        html,
+        text: 'Your order has been placed.',
+      })).resolves.toEqual({
+        sent: true,
+        provider: 'resend',
+        messageId: 'resend-message-123',
+      });
+
+      const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
+        html: string;
+        text: string;
+      };
+      expect(body.html).toContain('<table id="saga-email-footer"');
+      expect(body.html).toContain('https://www.facebook.com/undergraduate.hub');
+      expect(body.html).toContain('https://x.com/undergra_hub');
+      expect(body.text).toContain('Instagram: https://instagram.com/undergraduatehub_Com');
+      expect(body.text).toContain('Need Help? support@undergraduatehub.com');
+    } finally {
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('renders polished order and delivery confirmation emails safely', () => {
     const data = {
       customerName: 'Sam Customer',
