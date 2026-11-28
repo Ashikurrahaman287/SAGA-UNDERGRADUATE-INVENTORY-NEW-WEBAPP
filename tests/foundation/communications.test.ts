@@ -9,7 +9,7 @@ vi.mock('nodemailer', () => ({
 
 import { describe, expect, it, vi } from 'vitest';
 import { salePlacedSms, deliveryDeliveredSms, paymentReceivedSms } from '../../api/_lib/notifications';
-import { canSendTransactionalEmail, renderCommunicationEmail, renderOrderEmail, sendEmail } from '../../api/_lib/email';
+import { canSendTransactionalEmail, renderCommunicationEmail, renderLegacyOrderEmail, renderOrderEmail, sendEmail } from '../../api/_lib/email';
 import {
   normalizeBangladeshPhone,
   estimateSmsSegments,
@@ -118,6 +118,8 @@ describe('communications provider safety', () => {
         text: string;
       };
       expect(body.html).toContain('<table id="saga-email-footer"');
+      expect(body.html.match(/id="saga-email-footer"/g)).toHaveLength(1);
+      expect(body.html.indexOf('<table id="saga-email-footer"')).toBeLessThan(body.html.indexOf('</body>'));
       expect(body.html).toContain('https://www.facebook.com/undergraduate.hub');
       expect(body.html).toContain('https://x.com/undergra_hub');
       expect(body.text).toContain('Instagram: https://instagram.com/undergraduatehub_Com');
@@ -147,6 +149,7 @@ describe('communications provider safety', () => {
     };
     const orderEmail = renderOrderEmail(data);
     const deliveryEmail = renderOrderEmail({ ...data, emailType: 'delivery_confirmation' });
+    const legacyEmail = renderLegacyOrderEmail(data);
 
     expect(orderEmail).toContain('ORDER CONFIRMATION');
     expect(orderEmail).toContain('Thanks for your order, Sam');
@@ -155,6 +158,11 @@ describe('communications provider safety', () => {
     expect(orderEmail).not.toContain('<script>');
     expect(deliveryEmail).toContain('DELIVERY CONFIRMED');
     expect(deliveryEmail).toContain('Your order has arrived, Sam');
+    for (const html of [orderEmail, deliveryEmail, legacyEmail]) {
+      expect(html.match(/id="saga-email-footer"/g)).toHaveLength(1);
+      expect(html).toContain('https://www.linkedin.com/company/undergraduate-hub');
+      expect(html).toContain('mailto:support@undergraduatehub.com');
+    }
   });
 
   it('escapes administrator-composed email content', () => {
@@ -164,6 +172,8 @@ describe('communications provider safety', () => {
     });
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;<br>Order update');
     expect(html).not.toContain('<script>');
+    expect(html).toContain('id="saga-email-footer"');
+    expect(html).toContain('https://x.com/undergra_hub');
   });
 
   it('normalizes Bangladeshi phone numbers', () => {
